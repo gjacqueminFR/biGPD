@@ -5,8 +5,7 @@
 \title{Calculate the univariate return period with the GPD approach}
 \usage{
 UnivariateReturnPeriodCopula(
-  returnLevel,
-  GPDParam,
+  proba,
   extremalIndex,
   nbDaysPerYear,
   probaQuantile,
@@ -15,10 +14,6 @@ UnivariateReturnPeriodCopula(
 )
 }
 \arguments{
-\item{returnLevel}{The value defining the return period.}
-
-\item{GPDParam}{The parameters of the GPD. In a list with the following order: c(threshold, sigma, xi).}
-
 \item{extremalIndex}{The extremal index cf UnivariateExtremalIndex.}
 
 \item{nbDaysPerYear}{The number of days considered per year (integer).}
@@ -26,6 +21,10 @@ UnivariateReturnPeriodCopula(
 \item{probaQuantile}{The probabilityof the value above which data are supposed to follow a GPD. A common value is 0.95.}
 
 \item{h}{The parameter of non-concurrence (integer).}
+
+\item{returnLevel}{The value defining the return period.}
+
+\item{GPDParam}{The parameters of the GPD. In a list with the following order: c(threshold, sigma, xi).}
 }
 \value{
 The univariate return period with the GPD approach.

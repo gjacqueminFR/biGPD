@@ -4,13 +4,16 @@
 \alias{BivariateExtremalIndex}
 \title{Bivariate extremal index}
 \usage{
-BivariateExtremalIndex(data1, data2, probaQuantile, probas, nbYears, Dparam)
+BivariateExtremalIndex(
+  frechetData1,
+  frechetData2,
+  probaQuantile,
+  probas,
+  nbYears,
+  Dparam
+)
 }
 \arguments{
-\item{data1}{A vector of data for which the extremal index will be estimated.}
-
-\item{data2}{A vector of data for which their extremal index will be estimated.}
-
 \item{probaQuantile}{Data above the threshold of this probability are used to estimate the extremal index. The value has an impact over the estimation. It should be close to 1, 0.95 is a classical value.}
 
 \item{probas}{A vector of probability at which the bivariate extermal index is estimated.}
@@ -18,6 +21,10 @@ BivariateExtremalIndex(data1, data2, probaQuantile, probas, nbYears, Dparam)
 \item{nbYears}{The number of distinct years. Default value is 1.}
 
 \item{Dparam}{Cf documentation of the dgaps function of the exdex package. Default value is 3.}
+
+\item{data1}{A vector of data for which the extremal index will be estimated.}
+
+\item{data2}{A vector of data for which their extremal index will be estimated.}
 }
 \value{
 The univariate extremal index.

@@ -9,11 +9,11 @@ UnivariateExtremalIndex(data, probaQuantile, nbYears, Dparam)
 \arguments{
 \item{data}{A vector of data for which their extremal index will be estimated.}
 
+\item{probaQuantile}{Data above the threshold of this probability are used to estimate the extremal index. The value has an impact over the estimation. It should be close to the maximal value, the 95th quantile is a classical value.}
+
 \item{nbYears}{The number of distinct years. Default value is 1.}
 
 \item{Dparam}{Cf documentation of the dgaps function of the exdex package. Default value is 3.}
-
-\item{threshold}{Data above this threshold are used to estimate the extremal index. The value has an impact over the estimation. It should be close to the maximal value, the 95th quantile is a classical value.}
 }
 \value{
 The univariate extremal index.

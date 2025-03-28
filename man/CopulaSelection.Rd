@@ -4,12 +4,28 @@
 \alias{CopulaSelection}
 \title{Select the copula family}
 \usage{
-CopulaSelection(data, probasQuantile, listCopulaNumber)
+CopulaSelection(
+  data,
+  probaQuantile,
+  nbDaysPerYear,
+  nbYears,
+  blockSizes,
+  listProbas,
+  listCopulaNumber
+)
 }
 \arguments{
 \item{data}{A dataframe with two columns, one for each variable.}
 
-\item{probasQuantile}{List of probabilities of quantiles. Have to be high probabilities. Default to c(0.9, 0.91, 0.92, 0.93, 0.94, 0.95, 0.96, 0.97, 0.98).}
+\item{probaQuantile}{Data above the threshold of this probability are considered extremes in a peaks-over-threshold approach.}
+
+\item{nbDaysPerYear}{The number of days considered per year (integer).}
+
+\item{nbYears}{The number of years considered (integer).}
+
+\item{blockSizes}{Vector of integers of size 3. The sizes of the blocks considered for the declustering, with the univariates first and the bivariate block size at the end.}
+
+\item{listProbas}{List of probabilities of quantiles. Have to be high probabilities. Default to c(0.9, 0.91, 0.92, 0.93, 0.94, 0.95, 0.96, 0.97, 0.98).}
 
 \item{listCopulaNumber}{The list of copula from which the copula is selected. Default to c(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 13, 14, 16, 17, 18, 19, 20, 23, 24, 26, 27, 28, 29, 30, 33, 34, 36, 37, 38, 39, 40, 104, 114, 124, 134, 204, 214, 224, 234). See VineCopula documentation.}
 }
