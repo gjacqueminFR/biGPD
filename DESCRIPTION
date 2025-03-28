@@ -1,0 +1,22 @@
+Package: biGPD
+Title: Calculate probabilities and return periods for bivariate extremal events with the bi-GPD approach
+Version: 0.0.0.9000
+Authors@R: 
+    person("Grégoire", "Jacquemin", , "gregoire.jacquemin@minesparis.psl.eu", role = c("aut", "cre"),
+           comment = c(ORCID = "YOUR-ORCID-ID"))
+Description: Estimate parameters for the EGPD with the mev package. Estimate extremal indexes with the package exdex. Calculate probability of bivariate exceedance with the bi-GPD approach. Compute adequate return periods.
+License: `use_mit_license()`,
+Encoding: UTF-8
+LazyData: true
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.2
+Suggests: 
+    knitr,
+    rmarkdown,
+    testthat (>= 3.0.0)
+VignetteBuilder: knitr
+Config/testthat/edition: 3
+Imports: 
+    exdex
+Depends: 
+    R (>= 2.10)

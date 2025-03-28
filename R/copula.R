@@ -1,0 +1,367 @@
+
+
+
+
+UnivariateDeclustering <- function(data, nbDaysPerYear, nbYears, threshold, blockSize) {
+
+  nbBlocksPerYear <- (nbDaysPerYear %/% blockSize) + min(1, nbDaysPerYear %% blockSize)
+  dataDeclustered <- c()
+
+  for (year in seq_len(nbYears)) {
+    startYear <- 1 + (year - 1) * nbDaysPerYear
+    endYear <- year * nbDaysPerYear
+
+    dataYear <- data[startYear: endYear]
+
+    for (block in seq_len(nbBlocksPerYear)) {
+      startBlock <- 1 + (block - 1) * blockSize
+      endBlock <- min(block * blockSize, nbDaysPerYear)
+
+      maxBlock <- max(dataYear[startBlock: endBlock])
+
+      if (maxBlock >= threshold) {
+        dataDeclustered <- append(dataDeclustered, maxBlock)
+      }
+    }
+  }
+  return(dataDeclustered)
+}
+
+
+BivariateDeclustering <- function(data1, data2, nbDaysPerYear, nbYears, thresholds, blockSize, logic) {
+  if (missing(logic)) {
+    logic <- "AND"
+  }
+
+  nbBlocksPerYear <- (nbDaysPerYear %/% blockSize) + min(1, nbDaysPerYear %% blockSize)
+  dataDeclustered1 <- c()
+  dataDeclustered2 <- c()
+
+  for (year in seq_len(nbYears)) {
+    startYear <- 1 + (year - 1) * nbDaysPerYear
+    endYear <- year * nbDaysPerYear
+
+    dataYear1 <- data1[startYear: endYear]
+    dataYear2 <- data2[startYear: endYear]
+
+    for (block in seq_len(nbBlocksPerYear)) {
+      startBlock <- 1 + (block - 1) * blockSize
+      endBlock <- min(block * blockSize, nbDaysPerYear)
+
+      maxBlock1 <- max(dataYear1[startBlock: endBlock])
+      maxBlock2 <- max(dataYear2[startBlock: endBlock])
+
+      if (logic == "AND") {
+        if (maxBlock1 >= thresholds[1] && maxBlock2 >= thresholds[2]) {
+          dataDeclustered1 <- append(dataDeclustered1, maxBlock1)
+          dataDeclustered2 <- append(dataDeclustered2, maxBlock2)
+        }
+      } else if (logic == "OR") {
+        if (maxBlock1 >= thresholds[1] || maxBlock2 >= thresholds[2]) {
+          dataDeclustered1 <- append(dataDeclustered1, maxBlock1)
+          dataDeclustered2 <- append(dataDeclustered2, maxBlock2)
+        }
+      }
+    }
+  }
+  dataBivDecluster <- data.frame("1" = dataDeclustered1, "2" = dataDeclustered2)
+  return(dataBivDecluster)
+}
+
+
+#' Estimate the parameters of the GPD
+#'
+#' @param data A list of data.
+#' @param threshold The value above which data are supposed to follow a GPD.
+#' @importFrom tea gpdFit
+#' @return The estimated parameters of the GPD, in a list with the following order: c(threshold, sigma, xi).
+#' @export
+
+EstimateGPDParameters <- function(data, threshold) {
+  if (is.nan(tea::gpdFit(data, threshold = threshold, method = "mle")$par.ses[["Scale (Intercept)"]])) {
+    fit <- tea::gpdFit(data, threshold = threshold, method = "pwm")
+  } else {
+    fit <- tea::gpdFit(data, threshold = threshold, method = "mle")
+  }
+
+  GPDparam <- c(threshold, fit$par.ests[["Scale (Intercept)"]], fit$par.ests[["Shape (Intercept)"]]) # threshold, sigma, xi
+
+  return(GPDparam)
+}
+
+
+#' Select the copula family
+#'
+#' @param data A dataframe with two columns, one for each variable.
+#' @param probaQuantile Data above the threshold of this probability are considered extremes in a peaks-over-threshold approach.
+#' @param nbDaysPerYear The number of days considered per year (integer).
+#' @param nbYears The number of years considered (integer).
+#' @param blockSizes Vector of integers of size 3. The sizes of the blocks considered for the declustering, with the univariates first and the bivariate block size at the end.
+#' @param listProbas List of probabilities of quantiles. Have to be high probabilities. Default to c(0.9, 0.91, 0.92, 0.93, 0.94, 0.95, 0.96, 0.97, 0.98).
+#' @param listCopulaNumber The list of copula from which the copula is selected. Default to c(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 13, 14, 16, 17, 18, 19, 20, 23, 24, 26, 27, 28, 29, 30, 33, 34, 36, 37, 38, 39, 40, 104, 114, 124, 134, 204, 214, 224, 234). See VineCopula documentation.
+#' @importFrom VineCopula as.copuladata
+#' @importFrom VineCopula BiCopEstList
+#' @importFrom VineCopula BiCopName
+#' @importFrom tea pgpd
+#' @return The copula selected. It's the short name from the VineCopula package.
+#' @export
+
+CopulaSelection <- function(data, probaQuantile, nbDaysPerYear, nbYears, blockSizes, listProbas, listCopulaNumber) {
+  start("Copula selection")
+  if (missing(listProbas)) {
+    listProbas <- c(0.9, 0.91, 0.92, 0.93, 0.94, 0.95, 0.96, 0.97, 0.98)
+  }
+  if (missing(listCopulaNumber)) {
+    listCopulaNumber <- c(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 13, 14, 16, 17, 18, 19, 20, 23, 24, 26, 27, 28, 29, 30, 33, 34, 36, 37, 38, 39, 40, 104, 114, 124, 134, 204, 214, 224, 234)
+  }
+
+  copulaScore <- data.frame(Families = listCopulaNumber,
+                            ScoreSumPlaces = integer(length(listCopulaNumber)),
+                            ScoreMeanBIC = numeric(length(listCopulaNumber)),
+                            PercentAppearances = numeric(length(listCopulaNumber)),
+                            AppearAtSelectedQuantile = logical(length(listCopulaNumber)))
+  copulaScore$AppearAtSelectedQuantile <- FALSE
+
+  data1 <- data[, 1]
+  data2 <- data[, 2]
+
+  for (q in listProbas) {
+
+    ### first variable
+    threshold1 <- quantile(data1, q)
+    dataDecluster1 <- UnivariateDeclustering(data1, nbDaysPerYear, nbYears, threshold1, blockSizes[1])
+    GPDparam1 <- EstimateGPDParameters(dataDecluster1, threshold1)
+
+    ### second variable
+    threshold2 <- quantile(data2, q)
+    dataDecluster2 <- UnivariateDeclustering(data2, nbDaysPerYear, nbYears, threshold2, blockSizes[2])
+    GPDparam2 <- EstimateGPDParameters(dataDecluster2, threshold2)
+
+    ### Bivariate
+    dataBiv <- BivariateDeclustering(data1, data2, nbDaysPerYear, nbYears, c(threshold1, threshold2), blockSizes[3])
+
+    if (GPDparam1[3] < 0) {
+      dataBiv[, 1][dataBiv[, 1] >= GPDparam1[1] - (GPDparam1[2] / GPDparam1[3])] <- GPDparam1[1] - (GPDparam1[2] / GPDparam1[3]) - 0.0001
+    }
+    if (GPDparam2[3] < 0) {
+      dataBiv[, 2][dataBiv[, 2] >= GPDparam2[1] - (GPDparam2[2] / GPDparam2[3])] <- GPDparam2[1] - (GPDparam2[2] / GPDparam2[3]) - 0.0001
+    }
+
+    dataBiv[, 1] <- tea::pgpd(dataBiv[, 1], GPDparam1[1], GPDparam1[2], GPDparam1[3])
+    dataBiv[, 2] <- tea::pgpd(dataBiv[, 2], GPDparam2[1], GPDparam2[2], GPDparam2[3])
+
+    dataCop <- VineCopula::as.copuladata(dataBiv)
+
+    Unif1 <- dataCop[, 1]
+    Unif2 <- dataCop[, 2]
+
+    if (length(unique(Unif1)) > 1) {
+
+      # Copula selection
+
+      listCopula <- VineCopula::BiCopEstList(Unif1, Unif2)$summary
+
+      orderedCopula <- listCopula[order(listCopula$BIC), ]
+
+      for (i in seq_along(orderedCopula$family)) {
+
+        copulaScore[copulaScore$Families == orderedCopula[i, ]$family, ]$ScoreSumPlaces <- i + copulaScore[copulaScore$Families == orderedCopula[i, ]$family, ]$ScoreSumPlaces
+
+        copulaScore[copulaScore$Families == orderedCopula[i, ]$family, ]$ScoreMeanBIC <- orderedCopula[i, ]$BIC + copulaScore[copulaScore$Families == orderedCopula[i, ]$family, ]$ScoreMeanBIC
+
+        if (as.integer(100 * q) == as.integer(100 * probaQuantile)) {
+          copulaScore[copulaScore$Families == orderedCopula[i, ]$family, ]$AppearAtSelectedQuantile <- TRUE
+        }
+
+        copulaScore[copulaScore$Families == orderedCopula[i, ]$family, ]$PercentAppearances <- copulaScore[copulaScore$Families == orderedCopula[i, ]$family, ]$PercentAppearances + 1 / length(listProbas)
+
+      }
+
+    }
+  }
+
+  if (length(copulaScore$AppearAtSelectedQuantile[copulaScore$AppearAtSelectedQuantile]) > 0) {
+    copulaScore <- copulaScore[copulaScore$AppearAtSelectedQuantile, ]
+  }
+  copulaScore <- copulaScore[copulaScore$PercentAppearances > 0.5, ]
+  copulaScore$ScoreMeanBIC <- copulaScore$ScoreMeanBIC / (length(listProbas) * copulaScore$PercentAppearances) # Transform sum of BIC into a mean BIC pondered by the percentage of appearances
+
+  orderedcopulaScore <- copulaScore[order(copulaScore$ScoreMeanBIC), ]
+  CandidatesCopula <- orderedcopulaScore[orderedcopulaScore$ScoreMeanBIC < orderedcopulaScore$ScoreMeanBIC[1] + 2 & orderedcopulaScore$ScoreMeanBIC <= 0, ]
+
+  if (length(orderedcopulaScore$Families) < 1) {
+    selectedCopula <- "I"
+  } else if (CandidatesCopula$ScoreMeanBIC[1] > -0.02) {
+    selectedCopula <- "I"
+  } else if ("Gumbel" %in% VineCopula::BiCopName(CandidatesCopula$Families, short = FALSE)) {
+    if (CandidatesCopula[CandidatesCopula$Families == 4, ]$ScoreMeanBIC < 0) {
+      selectedCopula <- "G"
+    } else {
+      selectedCopula <- VineCopula::BiCopName(CandidatesCopula$Families[1], short = TRUE)
+    }
+  } else {
+    selectedCopula <- VineCopula::BiCopName(CandidatesCopula$Families[1], short = TRUE)
+  }
+
+  return(selectedCopula)
+}
+
+
+GetGPDproba <- function(returnLevel, GPDParam) {
+  if (GPDParam[3] < 0 && returnLevel > GPDParam[1] - GPDParam[2] / GPDParam[3]) {
+    GPDproba <- 1
+  } else {
+    GPDproba <- tea::pgpd(returnLevel, loc = GPDParam[1], scale = GPDParam[2], shape = GPDParam[3])
+  }
+  return(GPDproba)
+}
+
+#' Calculate the univariate return period with the GPD approach
+#'
+#' @param returnLevel The value defining the return period.
+#' @param GPDParam The parameters of the GPD. In a list with the following order: c(threshold, sigma, xi).
+#' @param extremalIndex The extremal index cf UnivariateExtremalIndex.
+#' @param nbDaysPerYear The number of days considered per year (integer).
+#' @param probaQuantile The probabilityof the value above which data are supposed to follow a GPD. A common value is 0.95.
+#' @param h The parameter of non-concurrence (integer).
+#' @importFrom tea gpdFit
+#' @return The univariate return period with the GPD approach.
+#' @export
+
+UnivariateReturnPeriodCopula <- function(proba, extremalIndex, nbDaysPerYear, probaQuantile, h, probaOccurrence) {
+  if (missing(probaOccurrence)) {
+    probaOccurrence <- 1 - exp(-1)
+  }
+
+  ReturnPeriod <- - log(1 - probaOccurrence) * h / (nbDaysPerYear * (1 - proba) * (1 - probaQuantile^(extremalIndex * h)))
+
+  return(ReturnPeriod)
+}
+
+
+Hbar <- function(probas, FU1U2, h, extremalIndexes, probaQuantile, nbYears, Dparam) {
+
+  minExtremalIndexValue <- max((1 - probaQuantile) * (1 - probas[1]) * extremalIndexes[1] / (1 - FU1U2), (1 - probaQuantile) * (1 - probas[2]) * extremalIndexes[2] / (1 - FU1U2))
+  if (extremalIndexes[3] < minExtremalIndexValue) {
+    extremalIndexBiv <- minExtremalIndexValue
+  } else {
+    extremalIndexBiv <- extremalIndexes[3]
+  }
+
+  Hbar <- (1 - probaQuantile^(extremalIndexes[1] * h)) * (1 - probas[1]) - 1 + (1 - probaQuantile^(extremalIndexes[2] * h)) * (1 - probas[2]) + FU1U2^(extremalIndexBiv * h)
+
+  return(Hbar)
+}
+
+BivariateReturnPeriodCopula <- function(returnLevels, GPDParam1, GPDParam2, h, extremalIndexes, probaQuantile, copula, nbDaysPerYear, nbYears, Dparam, probaOccurrence) {
+  if (missing(probaOccurrence)) {
+    probaOccurrence <- 1 - exp(-1)
+  }
+  if (missing(nbYears)) {
+    nbYears <- 1
+  }
+  if (missing(Dparam)) {
+    Dparam <- 3
+  }
+
+  GPDProba1 <- tea::pgpd(returnLevels[1], loc = GPDParam1[1], scale = GPDParam1[2], shape = GPDParam1[3])
+  GPDProba2 <- tea::pgpd(returnLevels[2], loc = GPDParam2[1], scale = GPDParam2[2], shape = GPDParam2[3])
+
+  dataBelow <- data[data[, 1] <= GPDParam1[1] & data[, 2] <= GPDParam2[1], ]
+  FU1U2 <- length(dataBelow[, 1]) / length(data[, 1])
+
+  hbarU1U2 <- Hbar(c(0, 0), FU1U2, h, extremalIndexes, probaQuantile, nbYears, Dparam)
+
+  hbarX1X2 <- hbarU1U2 * (1 + VineCopula::BiCopCDF(GPDProba1, GPDProba2, copula) - VineCopula::BiCopCDF(GPDProba1, 1, copula) - VineCopula::BiCopCDF(1, GPDProba2, copula))
+  returnPeriodBivariate <- - log(1 - probaOccurrence) * h / (nbDaysPerYear * hbarX1X2)
+
+  return(returnPeriodBivariate)
+}
+
+
+CopulaApproach <- function(data, probaQuantile, returnLevels, nbDaysPerYear, nbYears, h, blockSizes, Dparam, probaOccurrence, logic) {
+  print("start")
+  data1 <- data[, 1]
+  threshold1 <- quantile(data1, probaQuantile)
+  data2 <- data[, 2]
+  threshold2 <- quantile(data2, probaQuantile)
+
+  extremalIndex1 <- UnivariateExtremalIndex(data1, probaQuantile, nbYears, Dparam)
+  extremalIndex2 <- UnivariateExtremalIndex(data2, probaQuantile, nbYears, Dparam)
+  print("Univariate Extremal Index OK")
+
+  if (missing(blockSizes)) {
+    blockSize1 <- ceiling(1 / extremalIndex1)
+    blockSize2 <- ceiling(1 / extremalIndex2)
+  } else {
+    blockSize1 <- blockSizes[1]
+    blockSize2 <- blockSizes[2]
+  }
+
+  dataDecluster1 <- UnivariateDeclustering(data1, nbDaysPerYear, nbYears, threshold1, blockSize1)
+  dataDecluster2 <- UnivariateDeclustering(data2, nbDaysPerYear, nbYears, threshold2, blockSize2)
+
+  # Estimate univariate parameters
+  GPDparam1 <- EstimateGPDParameters(dataDecluster1, threshold1)
+  GPDparam2 <- EstimateGPDParameters(dataDecluster2, threshold2)
+  print("GPD parameters OK")
+
+  # Calculate univariate return periods
+  GPDproba1 <- GetGPDproba(returnLevels[1], GPDparam1)
+  GPDproba2 <- GetGPDproba(returnLevels[2], GPDparam2)
+  returnPeriod1 <- UnivariateReturnPeriodCopula(GPDproba1, extremalIndex1, nbDaysPerYear, probaQuantile, h, probaOccurrence)
+  returnPeriod2 <- UnivariateReturnPeriodCopula(GPDproba2, extremalIndex2, nbDaysPerYear, probaQuantile, h, probaOccurrence)
+  print("Univariate return period OK")
+
+  # Bivariate
+
+  # Bivariate extremal index
+  # Transform data to Frechet margins
+  ECDF1 <- ecdf(data1)
+  ECDF2 <- ecdf(data2)
+  frechet1 <- -1 / log(ECDF1(data1))
+  frechet2 <- -1 / log(ECDF2(data2))
+  extremalIndexBiv <- BivariateExtremalIndex(frechet1, frechet2, probaQuantile, c(probaQuantile, probaQuantile), nbYears, Dparam)
+  print("Bivariate Extremal Index OK")
+
+  # Bivariate declustering
+  if (missing(blockSizes)) {
+    blockSizeBiv <- ceiling(1 / extremalIndexBiv)
+  } else {
+    blockSizeBiv <- blockSizes[3]
+  }
+
+  dataBiv <- BivariateDeclustering(data1, data2, nbDaysPerYear, nbYears, c(threshold1, threshold2), blockSizeBiv, logic)
+
+  if (GPDparam1[3] < 0) {
+    dataBiv[, 1][dataBiv[, 1] >= GPDparam1[1] - (GPDparam1[2] / GPDparam1[3])] <- GPDparam1[1] - (GPDparam1[2] / GPDparam1[3]) - 0.0001
+  }
+  if (GPDparam2[3] < 0) {
+    dataBiv[, 2][dataBiv[, 2] >= GPDparam2[1] - (GPDparam2[2] / GPDparam2[3])] <- GPDparam2[1] - (GPDparam2[2] / GPDparam2[3]) - 0.0001
+  }
+
+  dataBiv[, 1] <- tea::pgpd(dataBiv[, 1], GPDparam1[1], GPDparam1[2], GPDparam1[3])
+  dataBiv[, 2] <- tea::pgpd(dataBiv[, 2], GPDparam2[1], GPDparam2[2], GPDparam2[3])
+
+  dataCop <- VineCopula::as.copuladata(dataBiv)
+
+  Unif1 <- dataCop[, 1]
+  Unif2 <- dataCop[, 2]
+
+  # Copula estimation
+  copulaFamily <- CopulaSelection(data, probaQuantile, nbDaysPerYear, nbYears, c(blockSize1, blockSize2, blockSizeBiv))
+  copula <- VineCopula::BiCopEst(Unif1, Unif2, family = BiCopName(copulaFamily), se = TRUE)
+  print("Copula OK")
+
+  # Bivariate return period
+  returnPeriodBiv <- BivariateReturnPeriodCopula(returnLevels, GPDparam1, GPDparam2, h, c(extremalIndex1, extremalIndex2, extremalIndexBiv), probaQuantile, copula, nbDaysPerYear, nbYears, Dparam, probaOccurrence)
+  print("Bivariate return period OK")
+
+  # Probability of non-concurrent excess
+  probaBiv <- h / (nbDaysPerYear * returnPeriodBiv)
+
+  chi <- max(2 - log(VineCopula::BiCopCDF(0.9999, 0.9999, copula)) / log(0.9999), 0)
+  chiBarre <- 2 * log(1 - 0.9999) / log(1 - 2 * 0.9999 + VineCopula::BiCopCDF(0.9999, 0.9999, copula)) - 1
+
+  return(c(returnPeriod1, returnPeriod2, returnPeriodBiv, probaBiv, chi, chiBarre))
+}
