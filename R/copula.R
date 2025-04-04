@@ -294,8 +294,16 @@ CopulaApproach <- function(data, probaQuantile, returnLevels, nbDaysPerYear, nbY
     blockSize1 <- ceiling(1 / extremalIndex1)
     blockSize2 <- ceiling(1 / extremalIndex2)
   } else {
-    blockSize1 <- blockSizes[1]
-    blockSize2 <- blockSizes[2]
+    if (blockSizes[1] == 0) {
+      blockSize1 <- ceiling(1 / extremalIndex1)
+    } else {
+      blockSize1 <- blockSizes[1]
+    }
+    if (blockSizes[2] == 0) {
+      blockSize2 <- ceiling(1 / extremalIndex2)
+    } else {
+      blockSize2 <- blockSizes[2]
+    }
   }
 
   dataDecluster1 <- UnivariateDeclustering(data1, nbDaysPerYear, nbYears, threshold1, blockSize1)
@@ -328,7 +336,11 @@ CopulaApproach <- function(data, probaQuantile, returnLevels, nbDaysPerYear, nbY
   if (missing(blockSizes)) {
     blockSizeBiv <- ceiling(1 / extremalIndexBiv)
   } else {
-    blockSizeBiv <- blockSizes[3]
+    if (blockSizes[3] == 0) {
+      blockSizeBiv <- ceiling(1 / extremalIndexBiv)
+    } else {
+      blockSizeBiv <- blockSizes[3]
+    }
   }
 
   dataBiv <- BivariateDeclustering(data1, data2, nbDaysPerYear, nbYears, c(threshold1, threshold2), blockSizeBiv, logic)
