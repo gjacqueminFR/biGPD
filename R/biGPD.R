@@ -54,6 +54,14 @@ BivariateExtremalIndex <- function(frechetData1, frechetData2, probaQuantile, pr
 }
 
 
+#' Estimate the parameters of the EGPD with maximul likelihood (mle).
+#'
+#' @param data A vector of data with the zeros filtered.
+#' @param EGPDtype 1 or 4. See Naveau et al. (2016) and the package mev for further information.
+#' @param initParam A vector of parameters to initialize the estimation. For type 1, it is (Kappa, Sigma, Xi), for type 4, it is (Prob, Kappa, Delta, Sigma, Xi).
+#' @return The parameters of the EGPD in the following order: for type 1, (Kappa, Sigma, Xi) and for type 4, (Prob, Kappa, Delta, Sigma, Xi).
+#' @export
+
 EstimateEGPDParameters <- function(data, EGPDtype, initParam) {
 
   if (EGPDtype == 4) {
@@ -68,19 +76,35 @@ EstimateEGPDParameters <- function(data, EGPDtype, initParam) {
 }
 
 
-### Zeros are treated outside the scope of this function --> to discuss ###
+#' Compute the probability to be under the return level value with an EGPD.
+#'
+#' @param returnLevel The value at which the cdf is computed.
+#' @param EGPDtype 1 or 4. See Naveau et al. (2016) and the package mev for further information.
+#' @param EGPDParams The EGPD parameters. For type 1, it is (Kappa, Sigma, Xi), for type 4, it is (Prob, Kappa, Delta, Sigma, Xi).
+#' @param probaZero The probability to be exactly zero.
+#' @return The cdf value at the return level value for an EGPD.
+#' @export
 
-ProbaEGPD <- function(returnLevel, EGPDtype, EGPDParams) {
+ProbaEGPD <- function(returnLevel, EGPDtype, EGPDParams, probaZero) {
 
   if (EGPDtype == 4) {
-    proba <- mev::pextgp(returnLevel, type = 4, prob = EGPDParams[1], kappa = EGPDParams[2], delta = EGPDParams[3], sigma = EGPDParams[4], xi = EGPDParams[5])
+    proba <- probaZero + (1 - probaZero) * mev::pextgp(returnLevel, type = 4, prob = EGPDParams[1], kappa = EGPDParams[2], delta = EGPDParams[3], sigma = EGPDParams[4], xi = EGPDParams[5])
   } else if (EGPDtype == 1) {
-    proba <- mev::pextgp(returnLevel, type = 1, kappa = EGPDParams[3], sigma = EGPDParams[1], xi = EGPDParams[2])
+    proba <- probaZero + (1 - probaZero) * mev::pextgp(returnLevel, type = 1, kappa = EGPDParams[3], sigma = EGPDParams[1], xi = EGPDParams[2])
   }
 
   return(proba)
 }
 
+
+#' Transform data assumed to follow an EGPD distribution to a unit exponential distribution.
+#'
+#' @param data A vector of data with the zeros filtered.
+#' @param EGPDtype 1 or 4. See Naveau et al. (2016) and the package mev for further information.
+#' @param EGPDParams The EGPD parameters. For type 1, it is (Kappa, Sigma, Xi), for type 4, it is (Prob, Kappa, Delta, Sigma, Xi).
+#' @param probaZero The probability to be exactly zero.
+#' @return A data vector.
+#' @export
 
 EGPDtoExp <- function(data, EGPDtype, EGPDParams, probaZero) {
 
@@ -93,6 +117,15 @@ EGPDtoExp <- function(data, EGPDtype, EGPDParams, probaZero) {
   return(expData)
 }
 
+
+#' Transform data assumed to follow an EGPD distribution to a unit Fréchet distribution.
+#'
+#' @param data A vector of data with the zeros filtered.
+#' @param EGPDtype 1 or 4. See Naveau et al. (2016) and the package mev for further information.
+#' @param EGPDParams The EGPD parameters. For type 1, it is (Kappa, Sigma, Xi), for type 4, it is (Prob, Kappa, Delta, Sigma, Xi).
+#' @param probaZero The probability to be exactly zero.
+#' @return A data vector.
+#' @export
 
 EGPDtoFrechet <- function(data, EGPDtype, EGPDParams, probaZero) {
 
@@ -130,7 +163,14 @@ ReturnPeriodBiGPD <- function(probas, extremalIndexes, h, nbDaysPerYear, probaOc
 }
 
 
-
+#' Compute the bivariate excess probability Fbar(x1,x2).
+#'
+#' @param probas A vector of size 2, with the 2 univariate probabilities. The two probabilities are likely close to 1.
+#' @param empCDF The empirical cdf of Delta.
+#' @param probaQuantile Data above the thresholds of this probability are used to compute the probability. The value has a small impact over the probability. It should be close to 1, 0.95 is a classical value. The same value is used for both margins for simplicity.
+#' @param FbarU1U2 The probability to be above both thresholds (quantiles of probability probaQuantile).
+#' @return The bivariate excess probability.
+#' @export
 
 BivariateExceedenceProbability <- function(probas, empCDF, probaQuantile, FbarU1U2) {
 
@@ -156,6 +196,23 @@ BivariateExceedenceProbability <- function(probas, empCDF, probaQuantile, FbarU1
   return(Fbar)
 }
 
+
+#' Example of copula approach. Compute univariate and bivariate return periods from 2 time series.
+#'
+#' @param data A dataframe with two columns, one for each time series.
+#' @param returnLevels A vector of size 2, one for each time series. Return periods correspond to the return levels.
+#' @param EGPDtypes A vector of size 2, one for each time series. Values are 1 or 4. See Naveau et al. (2016) and the package mev for further information.
+#' @param initParams1 A vector of parameters to initialize the estimation for the first time series. For type 1, it is (Kappa, Sigma, Xi), for type 4, it is (Prob, Kappa, Delta, Sigma, Xi).
+#' @param initParams2 A vector of parameters to initialize the estimation for the second time series. For type 1, it is (Kappa, Sigma, Xi), for type 4, it is (Prob, Kappa, Delta, Sigma, Xi).
+#' @param probaQuantile A float between 0 and 1. Data above the thresholds of this probability are used to compute the bivariate exceedence probability. The value has a small impact over the probability. It should be close to 1, 0.95 is a classical value. The same value is used for both margins for simplicity.
+#' @param nbDaysPerYear The number of days considered per year (integer).
+#' @param nbYears The number of distinct years. Default value is 1.
+#' @param h The parameter of non-concurrence (integer).
+#' @param probaOccurrence The probability that the values are reached before the return period time. Default value to 0.63.
+#' @param Dparam Cf documentation of the dgaps function of the exdex package. Default value is 3.
+#' @return The bivariate excess probability.
+#' @export
+
 BiGPDApproach <- function(data, returnLevels, EGPDtypes, initParams1, initParams2, probaQuantile, nbDaysPerYear, nbYears, h, probaOccurrence, Dparam) {
   print("start1")
   if (missing(probaOccurrence)) {
@@ -180,8 +237,8 @@ BiGPDApproach <- function(data, returnLevels, EGPDtypes, initParams1, initParams
   print("EGPD parameters OK")
 
   # Calculate univariate return periods
-  proba1 <- probaZero1 + (1 - probaZero1) * ProbaEGPD(returnLevels[1], EGPDtypes[1], EGPDparams1)
-  proba2 <- probaZero2 + (1 - probaZero2) * ProbaEGPD(returnLevels[2], EGPDtypes[2], EGPDparams2)
+  proba1 <- ProbaEGPD(returnLevels[1], EGPDtypes[1], EGPDparams1, probaZero1)
+  proba2 <- ProbaEGPD(returnLevels[2], EGPDtypes[2], EGPDparams2, probaZero2)
 
   returnPeriod1 <- -log(1 - probaOccurrence) / (nbDaysPerYear * extremalIndex1 * (1 - proba1))
   returnPeriod2 <- -log(1 - probaOccurrence) / (nbDaysPerYear * extremalIndex2 * (1 - proba2))
