@@ -197,7 +197,7 @@ BivariateExceedenceProbability <- function(probas, empCDF, probaQuantile, FbarU1
 }
 
 
-#' Example of copula approach. Compute univariate and bivariate return periods from 2 time series.
+#' Example of biGPD approach. Compute univariate and bivariate return periods from 2 time series.
 #'
 #' @param data A dataframe with two columns, one for each time series.
 #' @param returnLevels A vector of size 2, one for each time series. Return periods correspond to the return levels.
@@ -208,12 +208,12 @@ BivariateExceedenceProbability <- function(probas, empCDF, probaQuantile, FbarU1
 #' @param nbDaysPerYear The number of days considered per year (integer).
 #' @param nbYears The number of distinct years. Default value is 1.
 #' @param h The parameter of non-concurrence (integer).
-#' @param probaOccurrence The probability that the values are reached before the return period time. Default value to 0.63.
 #' @param Dparam Cf documentation of the dgaps function of the exdex package. Default value is 3.
-#' @return The bivariate excess probability.
+#' @param probaOccurrence The probability that the values are reached before the return period time. Default value to 0.63.
+#' @return A list with, in that order: the return period of first variable, the return period of the second variable, the bivariate return period, the non-concurrent joint excess probability, chi and chiBarre.
 #' @export
 
-BiGPDApproach <- function(data, returnLevels, EGPDtypes, initParams1, initParams2, probaQuantile, nbDaysPerYear, nbYears, h, probaOccurrence, Dparam) {
+BiGPDApproach <- function(data, returnLevels, EGPDtypes, initParams1, initParams2, probaQuantile, nbDaysPerYear, nbYears, h, Dparam, probaOccurrence) {
   print("start1")
   if (missing(probaOccurrence)) {
     probaOccurrence <- 1 - exp(-1)

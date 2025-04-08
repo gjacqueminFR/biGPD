@@ -2,7 +2,7 @@
 % Please edit documentation in R/biGPD.R
 \name{BiGPDApproach}
 \alias{BiGPDApproach}
-\title{Example of copula approach. Compute univariate and bivariate return periods from 2 time series.}
+\title{Example of biGPD approach. Compute univariate and bivariate return periods from 2 time series.}
 \usage{
 BiGPDApproach(
   data,
@@ -14,8 +14,8 @@ BiGPDApproach(
   nbDaysPerYear,
   nbYears,
   h,
-  probaOccurrence,
-  Dparam
+  Dparam,
+  probaOccurrence
 )
 }
 \arguments{
@@ -37,13 +37,13 @@ BiGPDApproach(
 
 \item{h}{The parameter of non-concurrence (integer).}
 
-\item{probaOccurrence}{The probability that the values are reached before the return period time. Default value to 0.63.}
-
 \item{Dparam}{Cf documentation of the dgaps function of the exdex package. Default value is 3.}
+
+\item{probaOccurrence}{The probability that the values are reached before the return period time. Default value to 0.63.}
 }
 \value{
-The bivariate excess probability.
+A list with, in that order: the return period of first variable, the return period of the second variable, the bivariate return period, the non-concurrent joint excess probability, chi and chiBarre.
 }
 \description{
-Example of copula approach. Compute univariate and bivariate return periods from 2 time series.
+Example of biGPD approach. Compute univariate and bivariate return periods from 2 time series.
 }

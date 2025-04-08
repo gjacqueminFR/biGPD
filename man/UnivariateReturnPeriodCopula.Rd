@@ -22,6 +22,8 @@ UnivariateReturnPeriodCopula(
 
 \item{h}{The parameter of non-concurrence (integer).}
 
+\item{probaOccurrence}{The probability that the values are reached before the return period time. Default value to 0.63.}
+
 \item{returnLevel}{The value defining the return period.}
 
 \item{GPDParam}{The parameters of the GPD. In a list with the following order: c(threshold, sigma, xi).}

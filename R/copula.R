@@ -1,6 +1,14 @@
 
 
-
+#' Decluster univariate data.
+#'
+#' @param data A vector of data.
+#' @param nbDaysPerYear The number of days considered per year (integer).
+#' @param nbYears The number of distinct years.
+#' @param threshold The value above which data are supposed to follow a GPD.
+#' @param blockSize The size of the blocks used for declustering.
+#' @return A list of declustered data: only the maxima of blocks that also exceeds the threshold.
+#' @export
 
 UnivariateDeclustering <- function(data, nbDaysPerYear, nbYears, threshold, blockSize) {
 
@@ -27,6 +35,18 @@ UnivariateDeclustering <- function(data, nbDaysPerYear, nbYears, threshold, bloc
   return(dataDeclustered)
 }
 
+
+#' Decluster bivariate data.
+#'
+#' @param data1 A vector of data for the first variable.
+#' @param data1 A vector of data for the second variable.
+#' @param nbDaysPerYear The number of days considered per year (integer).
+#' @param nbYears The number of distinct years.
+#' @param thresholds A vector of size 2. The first threshold is for the first variable, and the second value is for the second variable. The threshold is the value above which data are supposed to follow a GPD.
+#' @param blockSize The size of the blocks used for declustering.
+#' @param logic Either "AND" or "OR". Couples of bloxk maxima are retained if they both exceed their respective threshold in case of "AND", and if at least one of them exceed its respective threshold in case of "OR". Default value to "AND".
+#' @return A dataframe with two columns, one for each variable, of declustered data following the logic parameter
+#' @export
 
 BivariateDeclustering <- function(data1, data2, nbDaysPerYear, nbYears, thresholds, blockSize, logic) {
   if (missing(logic)) {
@@ -71,7 +91,7 @@ BivariateDeclustering <- function(data1, data2, nbDaysPerYear, nbYears, threshol
 
 #' Estimate the parameters of the GPD
 #'
-#' @param data A list of data.
+#' @param data A vector of data.
 #' @param threshold The value above which data are supposed to follow a GPD.
 #' @importFrom tea gpdFit
 #' @return The estimated parameters of the GPD, in a list with the following order: c(threshold, sigma, xi).
@@ -207,6 +227,14 @@ CopulaSelection <- function(data, probaQuantile, nbDaysPerYear, nbYears, blockSi
 }
 
 
+#' Compute the probability to be under the return level value with a GPD.
+#'
+#' @param returnLevel The value at which the cdf is computed.
+#' @param GPDParam The parameters of the GPD, in a list with the following order: c(threshold, sigma, xi).
+#' @importFrom tea pgpd
+#' @return The cdf value at the return level value for a GPD.
+#' @export
+
 GetGPDproba <- function(returnLevel, GPDParam) {
   if (GPDParam[3] < 0 && returnLevel > GPDParam[1] - GPDParam[2] / GPDParam[3]) {
     GPDproba <- 1
@@ -216,6 +244,7 @@ GetGPDproba <- function(returnLevel, GPDParam) {
   return(GPDproba)
 }
 
+
 #' Calculate the univariate return period with the GPD approach
 #'
 #' @param returnLevel The value defining the return period.
@@ -224,6 +253,7 @@ GetGPDproba <- function(returnLevel, GPDParam) {
 #' @param nbDaysPerYear The number of days considered per year (integer).
 #' @param probaQuantile The probabilityof the value above which data are supposed to follow a GPD. A common value is 0.95.
 #' @param h The parameter of non-concurrence (integer).
+#' @param probaOccurrence The probability that the values are reached before the return period time. Default value to 0.63.
 #' @importFrom tea gpdFit
 #' @return The univariate return period with the GPD approach.
 #' @export
@@ -239,6 +269,18 @@ UnivariateReturnPeriodCopula <- function(proba, extremalIndex, nbDaysPerYear, pr
 }
 
 
+#' Calculate the non-concurrent joint excess probability.
+#'
+#' @param probas 
+#' @param FU1U2 
+#' @param h The parameter of non-concurrence (integer).
+#' @param extremalIndexes A list of size 3, with the extremal index for the first variable in first, the one for the second variable in second and the bivaraite extremal index in third.
+#' @param probaQuantile The probabilityof the value above which data are supposed to follow a GPD. A common value is 0.95.
+#' @param nbYears The number of distinct years. Default value is 1.
+#' @param Dparam Cf documentation of the dgaps function of the exdex package. Default value is 3.
+#' @return The non-concurrent joint excess probability.
+#' @export
+
 Hbar <- function(probas, FU1U2, h, extremalIndexes, probaQuantile, nbYears, Dparam) {
 
   minExtremalIndexValue <- max((1 - probaQuantile) * (1 - probas[1]) * extremalIndexes[1] / (1 - FU1U2), (1 - probaQuantile) * (1 - probas[2]) * extremalIndexes[2] / (1 - FU1U2))
@@ -253,7 +295,25 @@ Hbar <- function(probas, FU1U2, h, extremalIndexes, probaQuantile, nbYears, Dpar
   return(Hbar)
 }
 
-BivariateReturnPeriodCopula <- function(returnLevels, GPDParam1, GPDParam2, h, extremalIndexes, probaQuantile, copula, nbDaysPerYear, nbYears, Dparam, probaOccurrence) {
+
+#' Calculate the bivariate return period with the copula approach.
+#'
+#' @param returnLevels A vector of size 2, one for each time series. Return periods correspond to the return levels.
+#' @param GPDParam1 The parameters of the GPD for the first variable, in a list with the following order: c(threshold, sigma, xi).
+#' @param GPDParam2 The parameters of the GPD for the second variable, in a list with the following order: c(threshold, sigma, xi).
+#' @param h The parameter of non-concurrence (integer).
+#' @param extremalIndexes A list of size 3, with the extremal index for the first variable in first, the one for the second variable in second and the bivaraite extremal index in third.
+#' @param probaQuantile The probabilityof the value above which data are supposed to follow a GPD. A common value is 0.95.
+#' @param copula The copula family. The short name from the VineCopula package is expected.
+#' @param FU1U2 The probability to be below both thresholds (quantiles of probability probaQuantile).
+#' @param nbDaysPerYear The number of days considered per year (integer).
+#' @param nbYears The number of distinct years. Default value is 1.
+#' @param Dparam Cf documentation of the dgaps function of the exdex package. Default value is 3.
+#' @param probaOccurrence The probability that the values are reached before the return period time. Default value to 0.63.
+#' @return The bivariate return period with the copula approach.
+#' @export
+
+BivariateReturnPeriodCopula <- function(returnLevels, GPDParam1, GPDParam2, h, extremalIndexes, probaQuantile, copula, FU1U2, nbDaysPerYear, nbYears, Dparam, probaOccurrence) {
   if (missing(probaOccurrence)) {
     probaOccurrence <- 1 - exp(-1)
   }
@@ -267,9 +327,6 @@ BivariateReturnPeriodCopula <- function(returnLevels, GPDParam1, GPDParam2, h, e
   GPDProba1 <- tea::pgpd(returnLevels[1], loc = GPDParam1[1], scale = GPDParam1[2], shape = GPDParam1[3])
   GPDProba2 <- tea::pgpd(returnLevels[2], loc = GPDParam2[1], scale = GPDParam2[2], shape = GPDParam2[3])
 
-  dataBelow <- data[data[, 1] <= GPDParam1[1] & data[, 2] <= GPDParam2[1], ]
-  FU1U2 <- length(dataBelow[, 1]) / length(data[, 1])
-
   hbarU1U2 <- Hbar(c(0, 0), FU1U2, h, extremalIndexes, probaQuantile, nbYears, Dparam)
 
   hbarX1X2 <- hbarU1U2 * (1 + VineCopula::BiCopCDF(GPDProba1, GPDProba2, copula) - VineCopula::BiCopCDF(GPDProba1, 1, copula) - VineCopula::BiCopCDF(1, GPDProba2, copula))
@@ -279,7 +336,22 @@ BivariateReturnPeriodCopula <- function(returnLevels, GPDParam1, GPDParam2, h, e
 }
 
 
-CopulaApproach <- function(data, probaQuantile, returnLevels, nbDaysPerYear, nbYears, h, blockSizes, Dparam, probaOccurrence, logic) {
+#' Example of copula approach. Compute univariate and bivariate return periods from 2 time series.
+#'
+#' @param data A dataframe with two columns, one for each time series. 
+#' @param returnLevels A vector of size 2, one for each time series. Return periods correspond to the return levels.
+#' @param probaQuantile The probabilityof the value above which data are supposed to follow a GPD. A common value is 0.95.
+#' @param nbDaysPerYear The number of days considered per year (integer).
+#' @param nbYears The number of distinct years. Default value is 1.
+#' @param h The parameter of non-concurrence (integer).
+#' @param blockSizes Vector of integers of size 3. The sizes of the blocks considered for the declustering, with the univariates first and the bivariate block size at the end.
+#' @param Dparam Cf documentation of the dgaps function of the exdex package. Default value is 3.
+#' @param probaOccurrence The probability that the values are reached before the return period time. Default value to 0.63.
+#' @param logic Either "AND" or "OR". Couples of bloxk maxima are retained if they both exceed their respective threshold in case of "AND", and if at least one of them exceed its respective threshold in case of "OR". Default value to "AND".
+#' @return A list with, in that order: the return period of first variable, the return period of the second variable, the bivariate return period, the non-concurrent joint excess probability, chi and chiBarre.
+#' @export
+
+CopulaApproach <- function(data, returnLevels, probaQuantile, nbDaysPerYear, nbYears, h, blockSizes, Dparam, probaOccurrence, logic) {
   print("start")
   data1 <- data[, 1]
   threshold1 <- quantile(data1, probaQuantile)
@@ -365,8 +437,11 @@ CopulaApproach <- function(data, probaQuantile, returnLevels, nbDaysPerYear, nbY
   copula <- VineCopula::BiCopEst(Unif1, Unif2, family = BiCopName(copulaFamily), se = TRUE)
   print("Copula OK")
 
-  # Bivariate return period
-  returnPeriodBiv <- BivariateReturnPeriodCopula(returnLevels, GPDparam1, GPDparam2, h, c(extremalIndex1, extremalIndex2, extremalIndexBiv), probaQuantile, copula, nbDaysPerYear, nbYears, Dparam, probaOccurrence)
+  # Calculate bivariate return period
+  dataBelow <- data[data[, 1] <= threshold1 & data[, 2] <= threshold2, ]
+  FU1U2 <- length(dataBelow[, 1]) / length(data[, 1])
+
+  returnPeriodBiv <- BivariateReturnPeriodCopula(returnLevels, GPDparam1, GPDparam2, h, c(extremalIndex1, extremalIndex2, extremalIndexBiv), probaQuantile, copula, FU1U2, nbDaysPerYear, nbYears, Dparam, probaOccurrence)
   print("Bivariate return period OK")
 
   # Probability of non-concurrent excess

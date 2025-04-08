@@ -7,7 +7,7 @@
 EstimateGPDParameters(data, threshold)
 }
 \arguments{
-\item{data}{A list of data.}
+\item{data}{A vector of data.}
 
 \item{threshold}{The value above which data are supposed to follow a GPD.}
 }
