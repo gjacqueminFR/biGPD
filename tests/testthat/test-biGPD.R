@@ -20,4 +20,4 @@ BiGPDApproach(data, c(max(data$Seine), max(data$Loire)), c(4, 4), c(0.5, 1.5, 4.
 
 data2 <- data.frame("TP" = Total_Precipitation_ERA5_1992_2021, "API" = API_ERA5_1992_2021)
 
-BiGPDApproach(data2, c(max(data2$TP), 64.4), c(1, 4), c(2, 3, 0.1), c(0.5, 5, 20, 10, 0.1), 0.95, 92, 30, 7)
+BiGPDApproach(data2, c(max(data2$TP), 64.38838), c(1, 4), c(2, 3, 0.1), c(0.5, 5, 20, 10, 0.1), 0.95, 92, 30, 7)
