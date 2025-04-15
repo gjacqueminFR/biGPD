@@ -271,6 +271,13 @@ BiGPDApproach <- function(data, returnLevels, EGPDtypes, initParams1, initParams
   } else {
     FbarX1X2 <- BivariateExceedenceProbability(c(proba1, proba2), ECDFDelta, probaQuantile, FbarU1U2)
   }
+
+  # Constraint on the bivariate extremal index
+  maxExtremalIndexBiv <- max(extremalIndex1 * (1 - proba1) / (2 - proba1 - proba2 - FbarX1X2), extremalIndex2 * (1 - proba2) / (2 - proba1 - proba2 - FbarX1X2))
+  if (extremalIndexBiv > maxExtremalIndexBiv) {
+    extremalIndexBiv <- maxExtremalIndexBiv
+  }
+
   returnPeriodBiv <- ReturnPeriodBiGPD(c(proba1, proba2, FbarX1X2), c(extremalIndex1, extremalIndex2, extremalIndexBiv), h, nbDaysPerYear, probaOccurrence)
   print("Bivariate return period OK")
 
