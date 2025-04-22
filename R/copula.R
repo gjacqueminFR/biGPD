@@ -417,24 +417,29 @@ CopulaApproach <- function(data, returnLevels, probaQuantile, nbDaysPerYear, nbY
 
   dataBiv <- BivariateDeclustering(data1, data2, nbDaysPerYear, nbYears, c(threshold1, threshold2), blockSizeBiv, logic)
 
-  if (GPDparam1[3] < 0) {
-    dataBiv[, 1][dataBiv[, 1] >= GPDparam1[1] - (GPDparam1[2] / GPDparam1[3])] <- GPDparam1[1] - (GPDparam1[2] / GPDparam1[3]) - 0.0001
+  if (length(dataBiv[, 1]) <= 2) {
+    copula <- VineCopula::BiCop(0, 0) # Independent copula
+  } else {
+
+    if (GPDparam1[3] < 0) {
+      dataBiv[, 1][dataBiv[, 1] >= GPDparam1[1] - (GPDparam1[2] / GPDparam1[3])] <- GPDparam1[1] - (GPDparam1[2] / GPDparam1[3]) - 0.0001
+    }
+    if (GPDparam2[3] < 0) {
+      dataBiv[, 2][dataBiv[, 2] >= GPDparam2[1] - (GPDparam2[2] / GPDparam2[3])] <- GPDparam2[1] - (GPDparam2[2] / GPDparam2[3]) - 0.0001
+    }
+
+    dataBiv[, 1] <- tea::pgpd(dataBiv[, 1], GPDparam1[1], GPDparam1[2], GPDparam1[3])
+    dataBiv[, 2] <- tea::pgpd(dataBiv[, 2], GPDparam2[1], GPDparam2[2], GPDparam2[3])
+
+    dataCop <- VineCopula::as.copuladata(dataBiv)
+
+    Unif1 <- dataCop[, 1]
+    Unif2 <- dataCop[, 2]
+
+    # Copula estimation
+    copulaFamily <- CopulaSelection(data, probaQuantile, nbDaysPerYear, nbYears, c(blockSize1, blockSize2, blockSizeBiv))
+    copula <- VineCopula::BiCopEst(Unif1, Unif2, family = VineCopula::BiCopName(copulaFamily), se = TRUE)
   }
-  if (GPDparam2[3] < 0) {
-    dataBiv[, 2][dataBiv[, 2] >= GPDparam2[1] - (GPDparam2[2] / GPDparam2[3])] <- GPDparam2[1] - (GPDparam2[2] / GPDparam2[3]) - 0.0001
-  }
-
-  dataBiv[, 1] <- tea::pgpd(dataBiv[, 1], GPDparam1[1], GPDparam1[2], GPDparam1[3])
-  dataBiv[, 2] <- tea::pgpd(dataBiv[, 2], GPDparam2[1], GPDparam2[2], GPDparam2[3])
-
-  dataCop <- VineCopula::as.copuladata(dataBiv)
-
-  Unif1 <- dataCop[, 1]
-  Unif2 <- dataCop[, 2]
-
-  # Copula estimation
-  copulaFamily <- CopulaSelection(data, probaQuantile, nbDaysPerYear, nbYears, c(blockSize1, blockSize2, blockSizeBiv))
-  copula <- VineCopula::BiCopEst(Unif1, Unif2, family = BiCopName(copulaFamily), se = TRUE)
   print("Copula OK")
 
   # Calculate bivariate return period
