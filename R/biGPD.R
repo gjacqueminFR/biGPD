@@ -273,8 +273,11 @@ BiGPDApproach <- function(data, returnLevels, EGPDtypes, initParams1, initParams
   }
 
   # Constraint on the bivariate extremal index
-  maxExtremalIndexBiv <- max(extremalIndex1 * (1 - proba1) / (2 - proba1 - proba2 - FbarX1X2), extremalIndex2 * (1 - proba2) / (2 - proba1 - proba2 - FbarX1X2))
-  if (extremalIndexBiv > maxExtremalIndexBiv) {
+  minExtremalIndexBiv <- max(extremalIndex1 * (1 - proba1) / (2 - proba1 - proba2 - FbarX1X2), extremalIndex2 * (1 - proba2) / (2 - proba1 - proba2 - FbarX1X2))
+  maxExtremalIndexBiv <- extremalIndex1 * (1 - proba1) / (2 - proba1 - proba2 - FbarX1X2) + extremalIndex2 * (1 - proba2) / (2 - proba1 - proba2 - FbarX1X2)
+  if (extremalIndexBiv < minExtremalIndexBiv) {
+    extremalIndexBiv <- minExtremalIndexBiv
+  } else if (extremalIndexBiv > maxExtremalIndexBiv) {
     extremalIndexBiv <- maxExtremalIndexBiv
   }
 
