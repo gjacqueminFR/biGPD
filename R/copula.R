@@ -84,7 +84,7 @@ BivariateDeclustering <- function(data1, data2, nbDaysPerYear, nbYears, threshol
       }
     }
   }
-  dataBivDecluster <- data.frame("1" = dataDeclustered1, "2" = dataDeclustered2)
+  dataBivDecluster <- data.frame("Var1" = dataDeclustered1, "Var2" = dataDeclustered2)
   return(dataBivDecluster)
 }
 
@@ -160,22 +160,22 @@ CopulaSelection <- function(data, probaQuantile, nbDaysPerYear, nbYears, blockSi
     ### Bivariate
     dataBiv <- BivariateDeclustering(data1, data2, nbDaysPerYear, nbYears, c(threshold1, threshold2), blockSizes[3])
 
-    if (GPDparam1[3] < 0) {
-      dataBiv[, 1][dataBiv[, 1] >= GPDparam1[1] - (GPDparam1[2] / GPDparam1[3])] <- GPDparam1[1] - (GPDparam1[2] / GPDparam1[3]) - 0.0001
-    }
-    if (GPDparam2[3] < 0) {
-      dataBiv[, 2][dataBiv[, 2] >= GPDparam2[1] - (GPDparam2[2] / GPDparam2[3])] <- GPDparam2[1] - (GPDparam2[2] / GPDparam2[3]) - 0.0001
-    }
+    if (length(dataBiv$Var1) > 2) {
 
-    dataBiv[, 1] <- tea::pgpd(dataBiv[, 1], GPDparam1[1], GPDparam1[2], GPDparam1[3])
-    dataBiv[, 2] <- tea::pgpd(dataBiv[, 2], GPDparam2[1], GPDparam2[2], GPDparam2[3])
+      if (GPDparam1[3] < 0) {
+        dataBiv[, 1][dataBiv[, 1] >= GPDparam1[1] - (GPDparam1[2] / GPDparam1[3])] <- GPDparam1[1] - (GPDparam1[2] / GPDparam1[3]) - 0.0001
+      }
+      if (GPDparam2[3] < 0) {
+        dataBiv[, 2][dataBiv[, 2] >= GPDparam2[1] - (GPDparam2[2] / GPDparam2[3])] <- GPDparam2[1] - (GPDparam2[2] / GPDparam2[3]) - 0.0001
+      }
 
-    dataCop <- VineCopula::as.copuladata(dataBiv)
+      dataBiv[, 1] <- tea::pgpd(dataBiv[, 1], GPDparam1[1], GPDparam1[2], GPDparam1[3])
+      dataBiv[, 2] <- tea::pgpd(dataBiv[, 2], GPDparam2[1], GPDparam2[2], GPDparam2[3])
 
-    Unif1 <- dataCop[, 1]
-    Unif2 <- dataCop[, 2]
+      dataCop <- VineCopula::as.copuladata(dataBiv)
 
-    if (length(unique(Unif1)) > 1) {
+      Unif1 <- dataCop[, 1]
+      Unif2 <- dataCop[, 2]
 
       # Copula selection
 
@@ -416,8 +416,9 @@ CopulaApproach <- function(data, returnLevels, probaQuantile, nbDaysPerYear, nbY
   }
 
   dataBiv <- BivariateDeclustering(data1, data2, nbDaysPerYear, nbYears, c(threshold1, threshold2), blockSizeBiv, logic)
+  print("Bivariate Declustering OK")
 
-  if (length(dataBiv[, 1]) <= 2) {
+  if (length(dataBiv$Var1) <= 2) {
     copula <- VineCopula::BiCop(0, 0) # Independent copula
   } else {
 
@@ -445,6 +446,16 @@ CopulaApproach <- function(data, returnLevels, probaQuantile, nbDaysPerYear, nbY
   # Calculate bivariate return period
   dataBelow <- data[data[, 1] <= threshold1 & data[, 2] <= threshold2, ]
   FU1U2 <- length(dataBelow[, 1]) / length(data[, 1])
+
+  # Constraint on the bivariate extremal index
+  ######## To implement
+  # minExtremalIndexBiv <- max(extremalIndex1 * (1 - proba1) / (2 - proba1 - proba2 - FbarX1X2), extremalIndex2 * (1 - proba2) / (2 - proba1 - proba2 - FbarX1X2))
+  # maxExtremalIndexBiv <- extremalIndex1 * (1 - proba1) / (2 - proba1 - proba2 - FbarX1X2) + extremalIndex2 * (1 - proba2) / (2 - proba1 - proba2 - FbarX1X2)
+  # if (extremalIndexBiv < minExtremalIndexBiv) {
+  #   extremalIndexBiv <- minExtremalIndexBiv
+  # } else if (extremalIndexBiv > maxExtremalIndexBiv) {
+  #   extremalIndexBiv <- maxExtremalIndexBiv
+  # }
 
   returnPeriodBiv <- BivariateReturnPeriodCopula(returnLevels, GPDparam1, GPDparam2, h, c(extremalIndex1, extremalIndex2, extremalIndexBiv), probaQuantile, copula, FU1U2, nbDaysPerYear, nbYears, Dparam, probaOccurrence)
   print("Bivariate return period OK")
