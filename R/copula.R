@@ -447,18 +447,17 @@ CopulaApproach <- function(data, returnLevels, probaQuantile, nbDaysPerYear, nbY
   dataBelow <- data[data[, 1] <= threshold1 & data[, 2] <= threshold2, ]
   FU1U2 <- length(dataBelow[, 1]) / length(data[, 1])
 
-  # Constraint on the bivariate extremal index
-  ######## To implement
-  # minExtremalIndexBiv <- max(extremalIndex1 * (1 - proba1) / (2 - proba1 - proba2 - FbarX1X2), extremalIndex2 * (1 - proba2) / (2 - proba1 - proba2 - FbarX1X2))
-  # maxExtremalIndexBiv <- extremalIndex1 * (1 - proba1) / (2 - proba1 - proba2 - FbarX1X2) + extremalIndex2 * (1 - proba2) / (2 - proba1 - proba2 - FbarX1X2)
-  # if (extremalIndexBiv < minExtremalIndexBiv) {
-  #   extremalIndexBiv <- minExtremalIndexBiv
-  # } else if (extremalIndexBiv > maxExtremalIndexBiv) {
-  #   extremalIndexBiv <- maxExtremalIndexBiv
-  # }
-
   returnPeriodBiv <- BivariateReturnPeriodCopula(returnLevels, GPDparam1, GPDparam2, h, c(extremalIndex1, extremalIndex2, extremalIndexBiv), probaQuantile, copula, FU1U2, nbDaysPerYear, nbYears, Dparam, probaOccurrence)
   print("Bivariate return period OK")
+
+  # Transform negative or NA return periods to Inf
+  if (returnPeriodBiv < 0) {
+    returnPeriodBiv <- Inf
+    probaBiv <- 0
+  } else if (is.na(returnPeriodBiv)) {
+    returnPeriodBiv <- Inf
+    probaBiv <- 0
+  }
 
   # Probability of non-concurrent excess
   probaBiv <- h / (nbDaysPerYear * returnPeriodBiv)
