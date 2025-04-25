@@ -451,10 +451,10 @@ CopulaApproach <- function(data, returnLevels, probaQuantile, nbDaysPerYear, nbY
   print("Bivariate return period OK")
 
   # Transform negative or NA return periods to Inf
-  if (returnPeriodBiv < 0) {
+  if (is.na(returnPeriodBiv)) {
     returnPeriodBiv <- Inf
     probaBiv <- 0
-  } else if (is.na(returnPeriodBiv)) {
+  } else if (returnPeriodBiv < 0) {
     returnPeriodBiv <- Inf
     probaBiv <- 0
   }
