@@ -17,6 +17,8 @@ data <- data.frame("Seine" = Seine_API_ERA5_1992_2021, "Loire" = Loire_API_ERA5_
 
 BiGPDApproach(data, c(max(data$Seine), max(data$Loire)), c(4, 4), c(0.5, 1.5, 4.5, 6, -0.1), c(0.5, 1.5, 4.5, 6, -0.1), 0.95, 61, 30, 4)
 
+BiGPDApproachReturnLevels(data, 100, c(4, 4), c(0.5, 1.5, 4.5, 6, -0.1), c(0.5, 1.5, 4.5, 6, -0.1), 0.95, 61, 30, 4)
+BiGPDApproach(data, c(31.55, 33.14), c(4, 4), c(0.5, 1.5, 4.5, 6, -0.1), c(0.5, 1.5, 4.5, 6, -0.1), 0.95, 61, 30, 4)
 
 data2 <- data.frame("TP" = Total_Precipitation_ERA5_1992_2021, "API" = API_ERA5_1992_2021)
 

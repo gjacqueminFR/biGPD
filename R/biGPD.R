@@ -97,6 +97,27 @@ ProbaEGPD <- function(returnLevel, EGPDtype, EGPDParams, probaZero) {
 }
 
 
+#' Compute the value corresponding to the cdf probability with an EGPD.
+#'
+#' @param proba The probability at which the inverse cdf is computed.
+#' @param EGPDtype 1 or 4. See Naveau et al. (2016) and the package mev for further information.
+#' @param EGPDParams The EGPD parameters. For type 1, it is (Kappa, Sigma, Xi), for type 4, it is (Prob, Kappa, Delta, Sigma, Xi).
+#' @param probaZero The probability to be exactly zero.
+#' @return The return level value at the cdf value for an EGPD.
+#' @export
+
+ValueEGPD <- function(proba, EGPDtype, EGPDParams, probaZero) {
+
+  if (EGPDtype == 4) {
+    returnLevel <- mev::qextgp((proba - probaZero) / (1 - probaZero), type = 4, prob = EGPDParams[1], kappa = EGPDParams[2], delta = EGPDParams[3], sigma = EGPDParams[4], xi = EGPDParams[5])
+  } else if (EGPDtype == 1) {
+    returnLevel <- mev::qextgp((proba - probaZero) / (1 - probaZero), type = 1, kappa = EGPDParams[1], sigma = EGPDParams[2], xi = EGPDParams[3])
+  }
+
+  return(returnLevel)
+}
+
+
 #' Transform data assumed to follow an EGPD distribution to a unit exponential distribution.
 #'
 #' @param data A vector of data with the zeros filtered.
@@ -238,7 +259,9 @@ BiGPDApproach <- function(data, returnLevels, EGPDtypes, initParams1, initParams
 
   # Calculate univariate return periods
   proba1 <- ProbaEGPD(returnLevels[1], EGPDtypes[1], EGPDparams1, probaZero1)
+  print(proba1)
   proba2 <- ProbaEGPD(returnLevels[2], EGPDtypes[2], EGPDparams2, probaZero2)
+  print(proba2)
 
   returnPeriod1 <- -log(1 - probaOccurrence) / (nbDaysPerYear * extremalIndex1 * (1 - proba1))
   returnPeriod2 <- -log(1 - probaOccurrence) / (nbDaysPerYear * extremalIndex2 * (1 - proba2))
@@ -291,4 +314,125 @@ BiGPDApproach <- function(data, returnLevels, EGPDtypes, initParams1, initParams
   chiBarre <- (log(1 - 0.9999) - log(chi)) / (log(1 - 0.9999) + log(chi))
 
   return(c(returnPeriod1, returnPeriod2, returnPeriodBiv, HbarX1X2, chi, chiBarre))
+}
+
+
+#' Bivariate return period when searching for return levels.
+#'
+#' @param probas A vector of size 3, with the 2 univariate probabilities first and then the probability of bivariate exceedence. The first two probabilities are likely close to 1, whereas the third one is likely close to 0.
+#' @param extremalIndexes A vector of size 3, with the 2 univariate extremal indexes first and then the bivariate extremal index.
+#' @param h The parameter of non-concurrence (integer).
+#' @param nbDaysPerYear The number of days considered per year (integer).
+#' @param probaOccurrence The probability that the values are reached before the return period time. Default value to 0.63.
+#' @return The bivariate return period.
+#' @export
+
+ReturnPeriodBiGPDReturnLevels <- function(probaRL, probaQuantile, FbarU1U2, extremalIndex1, extremalIndex2, extremalIndexBivOG, h, nbDaysPerYear, probaOccurrence) {
+  FbarX1X2 <- FbarU1U2 * (1 - probaRL) / (1 - probaQuantile)
+
+  # Constraint on the bivariate extremal index
+  minExtremalIndexBiv <- max(extremalIndex1 * (1 - probaRL) / (2 - probaRL - probaRL - FbarX1X2), extremalIndex2 * (1 - probaRL) / (2 - probaRL - probaRL - FbarX1X2))
+  maxExtremalIndexBiv <- extremalIndex1 * (1 - probaRL) / (2 - probaRL - probaRL - FbarX1X2) + extremalIndex2 * (1 - probaRL) / (2 - probaRL - probaRL - FbarX1X2)
+  if (extremalIndexBivOG < minExtremalIndexBiv) {
+    extremalIndexBiv <- minExtremalIndexBiv
+  } else if (extremalIndexBivOG > maxExtremalIndexBiv) {
+    extremalIndexBiv <- maxExtremalIndexBiv
+  } else {
+    extremalIndexBiv <- extremalIndexBivOG
+  }
+
+  returnPeriodBiv <- ReturnPeriodBiGPD(c(probaRL, probaRL, FbarX1X2), c(extremalIndex1, extremalIndex2, extremalIndexBiv), h, nbDaysPerYear, probaOccurrence)
+
+  return(returnPeriodBiv)
+}
+
+#' Example of biGPD approach to get return levels from return period. Compute the two return levels with equal univariate probability from a given bivariate return period..
+#'
+#' @param data A dataframe with two columns, one for each time series.
+#' @param returnLevels A vector of size 2, one for each time series. Return periods correspond to the return levels.
+#' @param EGPDtypes A vector of size 2, one for each time series. Values are 1 or 4. See Naveau et al. (2016) and the package mev for further information.
+#' @param initParams1 A vector of parameters to initialize the estimation for the first time series. For type 1, it is (Kappa, Sigma, Xi), for type 4, it is (Prob, Kappa, Delta, Sigma, Xi).
+#' @param initParams2 A vector of parameters to initialize the estimation for the second time series. For type 1, it is (Kappa, Sigma, Xi), for type 4, it is (Prob, Kappa, Delta, Sigma, Xi).
+#' @param probaQuantile A float between 0 and 1. Data above the thresholds of this probability are used to compute the bivariate exceedence probability. The value has a small impact over the probability. It should be close to 1, 0.95 is a classical value. The same value is used for both margins for simplicity.
+#' @param nbDaysPerYear The number of days considered per year (integer).
+#' @param nbYears The number of distinct years. Default value is 1.
+#' @param h The parameter of non-concurrence (integer).
+#' @param Dparam Cf documentation of the dgaps function of the exdex package. Default value is 3.
+#' @param probaOccurrence The probability that the values are reached before the return period time. Default value to 0.63.
+#' @return A list with, in that order: the return period of first variable, the return period of the second variable, the bivariate return period, the non-concurrent joint excess probability, chi and chiBarre.
+#' @export
+
+BiGPDApproachReturnLevels <- function(data, returnPeriod, EGPDtypes, initParams1, initParams2, probaQuantile, nbDaysPerYear, nbYears, h, Dparam, probaOccurrence) {
+  print("start1")
+  if (missing(probaOccurrence)) {
+    probaOccurrence <- 1 - exp(-1)
+  }
+
+  threshold1 <- quantile(data[, 1], probaQuantile)
+  threshold2 <- quantile(data[, 2], probaQuantile)
+
+  extremalIndex1 <- UnivariateExtremalIndex(data[, 1], probaQuantile, nbYears, Dparam)
+  extremalIndex2 <- UnivariateExtremalIndex(data[, 2], probaQuantile, nbYears, Dparam)
+  print("Univariate Extremal Index OK")
+
+  # Get the probability of no rain, and filter the zeros
+  probaZero1 <- length(data[, 1][data[, 1] == 0]) / length(data[, 1])
+  dataFiltered1 <- data[, 1][data[, 1] > 0]
+  probaZero2 <- length(data[, 2][data[, 2] == 0]) / length(data[, 2])
+  dataFiltered2 <- data[, 2][data[, 2] > 0]
+
+  EGPDparams1 <- EstimateEGPDParameters(dataFiltered1, EGPDtypes[1], initParams1)
+  EGPDparams2 <- EstimateEGPDParameters(dataFiltered2, EGPDtypes[2], initParams2)
+  print("EGPD parameters OK")
+
+  # Transformation to exponential margins
+  dataBiv <- data[data[, 1] > threshold1 | data[, 2] > threshold2, ]
+
+  exp1 <- EGPDtoExp(dataBiv[, 1], EGPDtypes[1], EGPDparams1, probaZero1)
+  exp2 <- EGPDtoExp(dataBiv[, 2], EGPDtypes[2], EGPDparams2, probaZero2)
+
+  # ECDF
+  delta <- exp1 - exp2
+  ECDFDelta <- ecdf(delta)
+  print("ECDF OK")
+
+  # Estimate bivariate extremal index
+  frechet1 <- EGPDtoFrechet(data[, 1], EGPDtypes[1], EGPDparams1, probaZero1)
+  frechet2 <- EGPDtoFrechet(data[, 2], EGPDtypes[2], EGPDparams2, probaZero2)
+
+  extremalIndexBivOG <- BivariateExtremalIndex(frechet1, frechet2, probaQuantile, c(0.95, 0.95), nbYears, Dparam) # The value of the univariate probability is not necessary here, the only thing that matters is that proba1 = proba2.
+  print("Bivariate Extremal Index OK")
+
+  # Calculate return levels
+  dataAbove <- data[data[, 1] >= threshold1 & data[, 2] >= threshold2, ]
+  FbarU1U2 <- length(dataAbove[, 1]) / length(data[, 1])
+
+
+  probaRLmin <- probaQuantile
+  probaRLmax <- 1
+  probaRL <- (probaRLmin + probaRLmax) / 2
+  res <- ReturnPeriodBiGPDReturnLevels(probaRL, probaQuantile, FbarU1U2, extremalIndex1, extremalIndex2, extremalIndexBivOG, h, nbDaysPerYear, probaOccurrence) - returnPeriod
+
+  while (abs(res) > 1) {
+    if (res > 0) {
+      probaRLmax <- probaRL
+      probaRL <- (probaRLmin + probaRLmax) / 2
+    } else {
+      probaRLmin <- probaRL
+      probaRL <- (probaRLmin + probaRLmax) / 2
+    }
+    res <- ReturnPeriodBiGPDReturnLevels(probaRL, probaQuantile, FbarU1U2, extremalIndex1, extremalIndex2, extremalIndexBivOG, h, nbDaysPerYear, probaOccurrence) - returnPeriod
+  }
+  print(probaRL)
+
+  returnLevel1 <- ValueEGPD(probaRL, EGPDtypes[1], EGPDparams1, probaZero1)
+  print(ProbaEGPD(ValueEGPD(probaRL, EGPDtypes[1], EGPDparams1, probaZero1), EGPDtypes[1], EGPDparams1, probaZero1) - probaRL)
+  returnLevel2 <- ValueEGPD(probaRL, EGPDtypes[2], EGPDparams2, probaZero2)
+  print("Return levels OK")
+
+  # Chi and chi barre values
+  chi <- FbarU1U2 / (1 - probaQuantile)
+  chiBarre <- (log(1 - 0.9999) - log(chi)) / (log(1 - 0.9999) + log(chi))
+
+  return(c(returnLevel1, returnLevel2, chi, chiBarre))
 }
