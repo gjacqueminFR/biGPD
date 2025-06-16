@@ -66,13 +66,13 @@ EstimateEGPDParameters <- function(data, EGPDtype, initParam) {
 
   if (EGPDtype == 4) {
     EGPDfit <- fit.extgp(data, model = 4, method = "mle", init = initParam, confint = FALSE, R = 5, plots = FALSE)
-    EGPDparams <- c(EGPDfit$fit$mle["prob"][[1]], EGPDfit$fit$mle["kappa"][[1]], EGPDfit$fit$mle["delta"][[1]], EGPDfit$fit$mle["sigma"][[1]], EGPDfit$fit$mle["xi"][[1]]) # (Prob, Kappa, Delta, Sigma, Xi)
+    EGPDparam <- c(EGPDfit$fit$mle["prob"][[1]], EGPDfit$fit$mle["kappa"][[1]], EGPDfit$fit$mle["delta"][[1]], EGPDfit$fit$mle["sigma"][[1]], EGPDfit$fit$mle["xi"][[1]]) # (Prob, Kappa, Delta, Sigma, Xi)
   } else if (EGPDtype == 1) {
     invisible(capture.output(EGPDfit <- fit.extgp(data, model = 1, method = "mle", init = initParam, confint = FALSE, R = 5, plots = FALSE)))
-    EGPDparams <- c(EGPDfit$fit$mle["kappa"][[1]], EGPDfit$fit$mle["sigma"][[1]], EGPDfit$fit$mle["xi"][[1]]) # (Kappa, Sigma, Xi)
+    EGPDparam <- c(EGPDfit$fit$mle["kappa"][[1]], EGPDfit$fit$mle["sigma"][[1]], EGPDfit$fit$mle["xi"][[1]]) # (Kappa, Sigma, Xi)
   }
 
-  return(EGPDparams)
+  return(EGPDparam)
 }
 
 
@@ -103,7 +103,7 @@ ProbaEGPD <- function(returnLevel, EGPDtype, EGPDParams, probaZero) {
 #' @param EGPDtype 1 or 4. See Naveau et al. (2016) and the package mev for further information.
 #' @param EGPDParams The EGPD parameters. For type 1, it is (Kappa, Sigma, Xi), for type 4, it is (Prob, Kappa, Delta, Sigma, Xi).
 #' @param probaZero The probability to be exactly zero.
-#' @return The return level value at the cdf value for an EGPD.
+#' @return The value at which the cdf equals proba for an EGPD.
 #' @export
 
 ValueEGPD <- function(proba, EGPDtype, EGPDParams, probaZero) {
@@ -253,14 +253,14 @@ BiGPDApproach <- function(data, returnLevels, EGPDtypes, initParams1, initParams
   probaZero2 <- length(data[, 2][data[, 2] == 0]) / length(data[, 2])
   dataFiltered2 <- data[, 2][data[, 2] > 0]
 
-  EGPDparams1 <- EstimateEGPDParameters(dataFiltered1, EGPDtypes[1], initParams1)
-  EGPDparams2 <- EstimateEGPDParameters(dataFiltered2, EGPDtypes[2], initParams2)
+  EGPDparam1 <- EstimateEGPDParameters(dataFiltered1, EGPDtypes[1], initParams1)
+  EGPDparam2 <- EstimateEGPDParameters(dataFiltered2, EGPDtypes[2], initParams2)
   print("EGPD parameters OK")
 
   # Calculate univariate return periods
-  proba1 <- ProbaEGPD(returnLevels[1], EGPDtypes[1], EGPDparams1, probaZero1)
+  proba1 <- ProbaEGPD(returnLevels[1], EGPDtypes[1], EGPDparam1, probaZero1)
   print(proba1)
-  proba2 <- ProbaEGPD(returnLevels[2], EGPDtypes[2], EGPDparams2, probaZero2)
+  proba2 <- ProbaEGPD(returnLevels[2], EGPDtypes[2], EGPDparam2, probaZero2)
   print(proba2)
 
   returnPeriod1 <- -log(1 - probaOccurrence) / (nbDaysPerYear * extremalIndex1 * (1 - proba1))
@@ -270,11 +270,11 @@ BiGPDApproach <- function(data, returnLevels, EGPDtypes, initParams1, initParams
   # Transformation to exponential margins
   dataBiv <- data[data[, 1] > threshold1 | data[, 2] > threshold2, ]
 
-  exp1 <- EGPDtoExp(dataBiv[, 1], EGPDtypes[1], EGPDparams1, probaZero1)
-  exp2 <- EGPDtoExp(dataBiv[, 2], EGPDtypes[2], EGPDparams2, probaZero2)
+  exp1 <- EGPDtoExp(dataBiv[, 1], EGPDtypes[1], EGPDparam1, probaZero1)
+  exp2 <- EGPDtoExp(dataBiv[, 2], EGPDtypes[2], EGPDparam2, probaZero2)
 
-  thresholdExp1 <- EGPDtoExp(threshold1, EGPDtypes[1], EGPDparams1, probaZero1)
-  thresholdExp2 <- EGPDtoExp(threshold2, EGPDtypes[2], EGPDparams2, probaZero2)
+  thresholdExp1 <- EGPDtoExp(threshold1, EGPDtypes[1], EGPDparam1, probaZero1)
+  thresholdExp2 <- EGPDtoExp(threshold2, EGPDtypes[2], EGPDparam2, probaZero2)
 
   # ECDF
   delta <- (exp1 - thresholdExp1) - (exp2 - thresholdExp2)
@@ -282,8 +282,8 @@ BiGPDApproach <- function(data, returnLevels, EGPDtypes, initParams1, initParams
   print("ECDF OK")
 
   # Estimate bivariate extremal index
-  frechet1 <- EGPDtoFrechet(data[, 1], EGPDtypes[1], EGPDparams1, probaZero1)
-  frechet2 <- EGPDtoFrechet(data[, 2], EGPDtypes[2], EGPDparams2, probaZero2)
+  frechet1 <- EGPDtoFrechet(data[, 1], EGPDtypes[1], EGPDparam1, probaZero1)
+  frechet2 <- EGPDtoFrechet(data[, 2], EGPDtypes[2], EGPDparam2, probaZero2)
 
   extremalIndexBiv <- BivariateExtremalIndex(frechet1, frechet2, probaQuantile, c(proba1, proba2), nbYears, Dparam)
   print("Bivariate Extremal Index OK")
@@ -384,18 +384,18 @@ BiGPDApproachReturnLevels <- function(data, returnPeriod, EGPDtypes, initParams1
   probaZero2 <- length(data[, 2][data[, 2] == 0]) / length(data[, 2])
   dataFiltered2 <- data[, 2][data[, 2] > 0]
 
-  EGPDparams1 <- EstimateEGPDParameters(dataFiltered1, EGPDtypes[1], initParams1)
-  EGPDparams2 <- EstimateEGPDParameters(dataFiltered2, EGPDtypes[2], initParams2)
+  EGPDparam1 <- EstimateEGPDParameters(dataFiltered1, EGPDtypes[1], initParams1)
+  EGPDparam2 <- EstimateEGPDParameters(dataFiltered2, EGPDtypes[2], initParams2)
   print("EGPD parameters OK")
 
   # Transformation to exponential margins
   dataBiv <- data[data[, 1] > threshold1 | data[, 2] > threshold2, ]
 
-  exp1 <- EGPDtoExp(dataBiv[, 1], EGPDtypes[1], EGPDparams1, probaZero1)
-  exp2 <- EGPDtoExp(dataBiv[, 2], EGPDtypes[2], EGPDparams2, probaZero2)
+  exp1 <- EGPDtoExp(dataBiv[, 1], EGPDtypes[1], EGPDparam1, probaZero1)
+  exp2 <- EGPDtoExp(dataBiv[, 2], EGPDtypes[2], EGPDparam2, probaZero2)
 
-  thresholdExp1 <- EGPDtoExp(threshold1, EGPDtypes[1], EGPDparams1, probaZero1)
-  thresholdExp2 <- EGPDtoExp(threshold2, EGPDtypes[2], EGPDparams2, probaZero2)
+  thresholdExp1 <- EGPDtoExp(threshold1, EGPDtypes[1], EGPDparam1, probaZero1)
+  thresholdExp2 <- EGPDtoExp(threshold2, EGPDtypes[2], EGPDparam2, probaZero2)
 
   # ECDF
   delta <- (exp1 - thresholdExp1) - (exp2 - thresholdExp2)
@@ -403,8 +403,8 @@ BiGPDApproachReturnLevels <- function(data, returnPeriod, EGPDtypes, initParams1
   print("ECDF OK")
 
   # Estimate bivariate extremal index
-  frechet1 <- EGPDtoFrechet(data[, 1], EGPDtypes[1], EGPDparams1, probaZero1)
-  frechet2 <- EGPDtoFrechet(data[, 2], EGPDtypes[2], EGPDparams2, probaZero2)
+  frechet1 <- EGPDtoFrechet(data[, 1], EGPDtypes[1], EGPDparam1, probaZero1)
+  frechet2 <- EGPDtoFrechet(data[, 2], EGPDtypes[2], EGPDparam2, probaZero2)
 
   extremalIndexBivOG <- BivariateExtremalIndex(frechet1, frechet2, probaQuantile, c(0.95, 0.95), nbYears, Dparam) # The value of the univariate probability is not necessary here, the only thing that matters is that proba1 = proba2.
   print("Bivariate Extremal Index OK")
@@ -431,9 +431,8 @@ BiGPDApproachReturnLevels <- function(data, returnPeriod, EGPDtypes, initParams1
   }
   print(probaRL)
 
-  returnLevel1 <- ValueEGPD(probaRL, EGPDtypes[1], EGPDparams1, probaZero1)
-  print(ProbaEGPD(ValueEGPD(probaRL, EGPDtypes[1], EGPDparams1, probaZero1), EGPDtypes[1], EGPDparams1, probaZero1) - probaRL)
-  returnLevel2 <- ValueEGPD(probaRL, EGPDtypes[2], EGPDparams2, probaZero2)
+  returnLevel1 <- ValueEGPD(probaRL, EGPDtypes[1], EGPDparam1, probaZero1)
+  returnLevel2 <- ValueEGPD(probaRL, EGPDtypes[2], EGPDparam2, probaZero2)
   print("Return levels OK")
 
   # Chi and chi barre values
