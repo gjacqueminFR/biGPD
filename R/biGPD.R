@@ -273,8 +273,11 @@ BiGPDApproach <- function(data, returnLevels, EGPDtypes, initParams1, initParams
   exp1 <- EGPDtoExp(dataBiv[, 1], EGPDtypes[1], EGPDparams1, probaZero1)
   exp2 <- EGPDtoExp(dataBiv[, 2], EGPDtypes[2], EGPDparams2, probaZero2)
 
+  thresholdExp1 <- EGPDtoExp(threshold1, EGPDtypes[1], EGPDparams1, probaZero1)
+  thresholdExp2 <- EGPDtoExp(threshold2, EGPDtypes[2], EGPDparams2, probaZero2)
+
   # ECDF
-  delta <- exp1 - exp2
+  delta <- (exp1 - thresholdExp1) - (exp2 - thresholdExp2)
   ECDFDelta <- ecdf(delta)
   print("ECDF OK")
 
@@ -349,7 +352,7 @@ ReturnPeriodBiGPDReturnLevels <- function(probaRL, probaQuantile, FbarU1U2, extr
 #' Example of biGPD approach to get return levels from return period. Compute the two return levels with equal univariate probability from a given bivariate return period..
 #'
 #' @param data A dataframe with two columns, one for each time series.
-#' @param returnLevels A vector of size 2, one for each time series. Return periods correspond to the return levels.
+#' @param returnPeriod An integer, in years.
 #' @param EGPDtypes A vector of size 2, one for each time series. Values are 1 or 4. See Naveau et al. (2016) and the package mev for further information.
 #' @param initParams1 A vector of parameters to initialize the estimation for the first time series. For type 1, it is (Kappa, Sigma, Xi), for type 4, it is (Prob, Kappa, Delta, Sigma, Xi).
 #' @param initParams2 A vector of parameters to initialize the estimation for the second time series. For type 1, it is (Kappa, Sigma, Xi), for type 4, it is (Prob, Kappa, Delta, Sigma, Xi).
@@ -359,7 +362,7 @@ ReturnPeriodBiGPDReturnLevels <- function(probaRL, probaQuantile, FbarU1U2, extr
 #' @param h The parameter of non-concurrence (integer).
 #' @param Dparam Cf documentation of the dgaps function of the exdex package. Default value is 3.
 #' @param probaOccurrence The probability that the values are reached before the return period time. Default value to 0.63.
-#' @return A list with, in that order: the return period of first variable, the return period of the second variable, the bivariate return period, the non-concurrent joint excess probability, chi and chiBarre.
+#' @return A list with, in that order: the return level of first variable, the return level of the second variable, chi and chiBarre.
 #' @export
 
 BiGPDApproachReturnLevels <- function(data, returnPeriod, EGPDtypes, initParams1, initParams2, probaQuantile, nbDaysPerYear, nbYears, h, Dparam, probaOccurrence) {
@@ -391,8 +394,11 @@ BiGPDApproachReturnLevels <- function(data, returnPeriod, EGPDtypes, initParams1
   exp1 <- EGPDtoExp(dataBiv[, 1], EGPDtypes[1], EGPDparams1, probaZero1)
   exp2 <- EGPDtoExp(dataBiv[, 2], EGPDtypes[2], EGPDparams2, probaZero2)
 
+  thresholdExp1 <- EGPDtoExp(threshold1, EGPDtypes[1], EGPDparams1, probaZero1)
+  thresholdExp2 <- EGPDtoExp(threshold2, EGPDtypes[2], EGPDparams2, probaZero2)
+
   # ECDF
-  delta <- exp1 - exp2
+  delta <- (exp1 - thresholdExp1) - (exp2 - thresholdExp2)
   ECDFDelta <- ecdf(delta)
   print("ECDF OK")
 
