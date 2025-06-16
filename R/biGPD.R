@@ -413,21 +413,27 @@ BiGPDApproachReturnLevels <- function(data, returnPeriod, EGPDtypes, initParams1
   dataAbove <- data[data[, 1] >= threshold1 & data[, 2] >= threshold2, ]
   FbarU1U2 <- length(dataAbove[, 1]) / length(data[, 1])
 
-
+  iteration <- 0
   probaRLmin <- probaQuantile
   probaRLmax <- 1
-  probaRL <- (probaRLmin + probaRLmax) / 2
-  res <- ReturnPeriodBiGPDReturnLevels(probaRL, probaQuantile, FbarU1U2, extremalIndex1, extremalIndex2, extremalIndexBivOG, h, nbDaysPerYear, probaOccurrence) - returnPeriod
 
-  while (abs(res) > 1) {
-    if (res > 0) {
-      probaRLmax <- probaRL
-      probaRL <- (probaRLmin + probaRLmax) / 2
-    } else {
-      probaRLmin <- probaRL
-      probaRL <- (probaRLmin + probaRLmax) / 2
-    }
+  if (ReturnPeriodBiGPDReturnLevels(probaRLmin, probaQuantile, FbarU1U2, extremalIndex1, extremalIndex2, extremalIndexBivOG, h, nbDaysPerYear, probaOccurrence) > returnPeriod) {
+    probaRL <- probaRLmax
+  } else {
+    probaRL <- (probaRLmin + probaRLmax) / 2
     res <- ReturnPeriodBiGPDReturnLevels(probaRL, probaQuantile, FbarU1U2, extremalIndex1, extremalIndex2, extremalIndexBivOG, h, nbDaysPerYear, probaOccurrence) - returnPeriod
+
+    while (abs(res) > 1 && iteration < 1000) {
+      if (res > 0) {
+        probaRLmax <- probaRL
+        probaRL <- (probaRLmin + probaRLmax) / 2
+      } else {
+        probaRLmin <- probaRL
+        probaRL <- (probaRLmin + probaRLmax) / 2
+      }
+      res <- ReturnPeriodBiGPDReturnLevels(probaRL, probaQuantile, FbarU1U2, extremalIndex1, extremalIndex2, extremalIndexBivOG, h, nbDaysPerYear, probaOccurrence) - returnPeriod
+      iteration <- iteration + 1
+    }
   }
   print(probaRL)
 

@@ -586,25 +586,32 @@ CopulaApproachReturnLevels <- function(data, returnPeriod, probaQuantile, nbDays
   dataBelow <- data[data[, 1] <= threshold1 & data[, 2] <= threshold2, ]
   FU1U2 <- length(dataBelow[, 1]) / length(data[, 1])
 
-
+  iteration <- 0
   probaRLmin <- probaQuantile
   probaRLmax <- 1
-  probaRL <- (probaRLmin + probaRLmax) / 2
-  GPDprobaRL1 <- 1 - (1 - probaRL^(h * extremalIndex1)) / (1 - probaQuantile^(h * extremalIndex1))
-  GPDprobaRL2 <- 1 - (1 - probaRL^(h * extremalIndex2)) / (1 - probaQuantile^(h * extremalIndex2))
-  res <- BivariateReturnPeriodCopula(c(GPDprobaRL1, GPDprobaRL2), h, c(extremalIndex1, extremalIndex2, extremalIndexBiv), probaQuantile, copula, FU1U2, nbDaysPerYear, nbYears, Dparam, probaOccurrence) - returnPeriod
+  GPDprobaRL1 <- 1 - (1 - probaRLmin^(h * extremalIndex1)) / (1 - probaQuantile^(h * extremalIndex1))
+  GPDprobaRL2 <- 1 - (1 - probaRLmin^(h * extremalIndex2)) / (1 - probaQuantile^(h * extremalIndex2))
 
-  while (abs(res) > 1) {
-    if (res > 0) {
-      probaRLmax <- probaRL
-      probaRL <- (probaRLmin + probaRLmax) / 2
-    } else {
-      probaRLmin <- probaRL
-      probaRL <- (probaRLmin + probaRLmax) / 2
-    }
+  if (BivariateReturnPeriodCopula(c(GPDprobaRL1, GPDprobaRL2), h, c(extremalIndex1, extremalIndex2, extremalIndexBiv), probaQuantile, copula, FU1U2, nbDaysPerYear, nbYears, Dparam, probaOccurrence) > returnPeriod) {
+    probaRL <- probaRLmax
+  } else {
+    probaRL <- (probaRLmin + probaRLmax) / 2
     GPDprobaRL1 <- 1 - (1 - probaRL^(h * extremalIndex1)) / (1 - probaQuantile^(h * extremalIndex1))
     GPDprobaRL2 <- 1 - (1 - probaRL^(h * extremalIndex2)) / (1 - probaQuantile^(h * extremalIndex2))
     res <- BivariateReturnPeriodCopula(c(GPDprobaRL1, GPDprobaRL2), h, c(extremalIndex1, extremalIndex2, extremalIndexBiv), probaQuantile, copula, FU1U2, nbDaysPerYear, nbYears, Dparam, probaOccurrence) - returnPeriod
+
+    while (abs(res) > 1) {
+      if (res > 0) {
+        probaRLmax <- probaRL
+        probaRL <- (probaRLmin + probaRLmax) / 2
+      } else {
+        probaRLmin <- probaRL
+        probaRL <- (probaRLmin + probaRLmax) / 2
+      }
+      GPDprobaRL1 <- 1 - (1 - probaRL^(h * extremalIndex1)) / (1 - probaQuantile^(h * extremalIndex1))
+      GPDprobaRL2 <- 1 - (1 - probaRL^(h * extremalIndex2)) / (1 - probaQuantile^(h * extremalIndex2))
+      res <- BivariateReturnPeriodCopula(c(GPDprobaRL1, GPDprobaRL2), h, c(extremalIndex1, extremalIndex2, extremalIndexBiv), probaQuantile, copula, FU1U2, nbDaysPerYear, nbYears, Dparam, probaOccurrence) - returnPeriod
+    }
   }
   print(probaRL)
 
