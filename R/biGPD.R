@@ -259,59 +259,65 @@ BiGPDApproach <- function(data, returnLevels, EGPDtypes, initParams1, initParams
 
   # Calculate univariate return periods
   proba1 <- ProbaEGPD(returnLevels[1], EGPDtypes[1], EGPDparam1, probaZero1)
-  print(proba1)
   proba2 <- ProbaEGPD(returnLevels[2], EGPDtypes[2], EGPDparam2, probaZero2)
-  print(proba2)
 
   returnPeriod1 <- -log(1 - probaOccurrence) / (nbDaysPerYear * extremalIndex1 * (1 - proba1))
   returnPeriod2 <- -log(1 - probaOccurrence) / (nbDaysPerYear * extremalIndex2 * (1 - proba2))
   print("Univariate return period OK")
 
-  # Transformation to exponential margins
-  dataBiv <- data[data[, 1] > threshold1 | data[, 2] > threshold2, ]
-
-  exp1 <- EGPDtoExp(dataBiv[, 1], EGPDtypes[1], EGPDparam1, probaZero1)
-  exp2 <- EGPDtoExp(dataBiv[, 2], EGPDtypes[2], EGPDparam2, probaZero2)
-
-  thresholdExp1 <- EGPDtoExp(threshold1, EGPDtypes[1], EGPDparam1, probaZero1)
-  thresholdExp2 <- EGPDtoExp(threshold2, EGPDtypes[2], EGPDparam2, probaZero2)
-
-  # ECDF
-  delta <- (exp1 - thresholdExp1) - (exp2 - thresholdExp2)
-  ECDFDelta <- ecdf(delta)
-  print("ECDF OK")
-
-  # Estimate bivariate extremal index
-  frechet1 <- EGPDtoFrechet(data[, 1], EGPDtypes[1], EGPDparam1, probaZero1)
-  frechet2 <- EGPDtoFrechet(data[, 2], EGPDtypes[2], EGPDparam2, probaZero2)
-
-  extremalIndexBiv <- BivariateExtremalIndex(frechet1, frechet2, probaQuantile, c(proba1, proba2), nbYears, Dparam)
-  print("Bivariate Extremal Index OK")
-
-  # Calculate bivariate return periods
+  # Constant estimated with frequency
   dataAbove <- data[data[, 1] >= threshold1 & data[, 2] >= threshold2, ]
   FbarU1U2 <- length(dataAbove[, 1]) / length(data[, 1])
 
-  if (proba1 == 1 || proba2 == 1) {
-    FbarX1X2 <- 0
+  if (returnPeriod1 == Inf || returnPeriod2 == Inf) {
+    returnPeriodBiv <- Inf
+    HbarX1X2 <- 0
   } else {
-    FbarX1X2 <- BivariateExceedenceProbability(c(proba1, proba2), ECDFDelta, probaQuantile, FbarU1U2)
+
+    # Transformation to exponential margins
+    dataBiv <- data[data[, 1] > threshold1 | data[, 2] > threshold2, ]
+
+    exp1 <- EGPDtoExp(dataBiv[, 1], EGPDtypes[1], EGPDparam1, probaZero1)
+    exp2 <- EGPDtoExp(dataBiv[, 2], EGPDtypes[2], EGPDparam2, probaZero2)
+
+    thresholdExp1 <- EGPDtoExp(threshold1, EGPDtypes[1], EGPDparam1, probaZero1)
+    thresholdExp2 <- EGPDtoExp(threshold2, EGPDtypes[2], EGPDparam2, probaZero2)
+
+    # ECDF
+    delta <- (exp1 - thresholdExp1) - (exp2 - thresholdExp2)
+    ECDFDelta <- ecdf(delta)
+    print("ECDF OK")
+
+    # Estimate bivariate extremal index
+    frechet1 <- EGPDtoFrechet(data[, 1], EGPDtypes[1], EGPDparam1, probaZero1)
+    frechet2 <- EGPDtoFrechet(data[, 2], EGPDtypes[2], EGPDparam2, probaZero2)
+
+    extremalIndexBiv <- BivariateExtremalIndex(frechet1, frechet2, probaQuantile, c(proba1, proba2), nbYears, Dparam)
+    print("Bivariate Extremal Index OK")
+
+    # Calculate bivariate return periods
+
+    if (proba1 == 1 || proba2 == 1) {
+      FbarX1X2 <- 0
+    } else {
+      FbarX1X2 <- BivariateExceedenceProbability(c(proba1, proba2), ECDFDelta, probaQuantile, FbarU1U2)
+    }
+
+    # Constraint on the bivariate extremal index
+    minExtremalIndexBiv <- max(extremalIndex1 * (1 - proba1) / (2 - proba1 - proba2 - FbarX1X2), extremalIndex2 * (1 - proba2) / (2 - proba1 - proba2 - FbarX1X2))
+    maxExtremalIndexBiv <- extremalIndex1 * (1 - proba1) / (2 - proba1 - proba2 - FbarX1X2) + extremalIndex2 * (1 - proba2) / (2 - proba1 - proba2 - FbarX1X2)
+    if (extremalIndexBiv < minExtremalIndexBiv) {
+      extremalIndexBiv <- minExtremalIndexBiv
+    } else if (extremalIndexBiv > maxExtremalIndexBiv) {
+      extremalIndexBiv <- maxExtremalIndexBiv
+    }
+
+    returnPeriodBiv <- ReturnPeriodBiGPD(c(proba1, proba2, FbarX1X2), c(extremalIndex1, extremalIndex2, extremalIndexBiv), h, nbDaysPerYear, probaOccurrence)
+    print("Bivariate return period OK")
+
+    # Probability of non-concurrent excess
+    HbarX1X2 <- h / (nbDaysPerYear * returnPeriodBiv)
   }
-
-  # Constraint on the bivariate extremal index
-  minExtremalIndexBiv <- max(extremalIndex1 * (1 - proba1) / (2 - proba1 - proba2 - FbarX1X2), extremalIndex2 * (1 - proba2) / (2 - proba1 - proba2 - FbarX1X2))
-  maxExtremalIndexBiv <- extremalIndex1 * (1 - proba1) / (2 - proba1 - proba2 - FbarX1X2) + extremalIndex2 * (1 - proba2) / (2 - proba1 - proba2 - FbarX1X2)
-  if (extremalIndexBiv < minExtremalIndexBiv) {
-    extremalIndexBiv <- minExtremalIndexBiv
-  } else if (extremalIndexBiv > maxExtremalIndexBiv) {
-    extremalIndexBiv <- maxExtremalIndexBiv
-  }
-
-  returnPeriodBiv <- ReturnPeriodBiGPD(c(proba1, proba2, FbarX1X2), c(extremalIndex1, extremalIndex2, extremalIndexBiv), h, nbDaysPerYear, probaOccurrence)
-  print("Bivariate return period OK")
-
-  # Probability of non-concurrent excess
-  HbarX1X2 <- h / (nbDaysPerYear * returnPeriodBiv)
 
   chi <- FbarU1U2 / (1 - probaQuantile)
   chiBarre <- (log(1 - 0.9999) - log(chi)) / (log(1 - 0.9999) + log(chi))
@@ -418,7 +424,8 @@ BiGPDApproachReturnLevels <- function(data, returnPeriod, EGPDtypes, initParams1
   probaRLmax <- 1
 
   if (ReturnPeriodBiGPDReturnLevels(probaRLmin, probaQuantile, FbarU1U2, extremalIndex1, extremalIndex2, extremalIndexBivOG, h, nbDaysPerYear, probaOccurrence) > returnPeriod) {
-    probaRL <- probaRLmax
+    probaRL <- probaRLmin
+    print("Problem !!")
   } else {
     probaRL <- (probaRLmin + probaRLmax) / 2
     res <- ReturnPeriodBiGPDReturnLevels(probaRL, probaQuantile, FbarU1U2, extremalIndex1, extremalIndex2, extremalIndexBivOG, h, nbDaysPerYear, probaOccurrence) - returnPeriod
@@ -435,7 +442,6 @@ BiGPDApproachReturnLevels <- function(data, returnPeriod, EGPDtypes, initParams1
       iteration <- iteration + 1
     }
   }
-  print(probaRL)
 
   returnLevel1 <- ValueEGPD(probaRL, EGPDtypes[1], EGPDparam1, probaZero1)
   returnLevel2 <- ValueEGPD(probaRL, EGPDtypes[2], EGPDparam2, probaZero2)
