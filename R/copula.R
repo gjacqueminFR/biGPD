@@ -478,7 +478,7 @@ CopulaApproach <- function(data, returnLevels, probaQuantile, nbDaysPerYear, nbY
   chi <- max(2 - log(VineCopula::BiCopCDF(0.9999, 0.9999, copula)) / log(0.9999), 0)
   chiBarre <- 2 * log(1 - 0.9999) / log(1 - 2 * 0.9999 + VineCopula::BiCopCDF(0.9999, 0.9999, copula)) - 1
 
-  return(c(returnPeriod1, returnPeriod2, returnPeriodBiv, probaBiv, chi, chiBarre))
+  return(c(returnPeriod1, returnPeriod2, returnPeriodBiv, probaBiv, chi, chiBarre, copulaFamily))
 }
 
 
@@ -622,5 +622,5 @@ CopulaApproachReturnLevels <- function(data, returnPeriod, probaQuantile, nbDays
   chi <- max(2 - log(VineCopula::BiCopCDF(0.9999, 0.9999, copula)) / log(0.9999), 0)
   chiBarre <- 2 * log(1 - 0.9999) / log(1 - 2 * 0.9999 + VineCopula::BiCopCDF(0.9999, 0.9999, copula)) - 1
 
-  return(c(returnLevel1, returnLevel2, chi, chiBarre))
+  return(c(returnLevel1, returnLevel2, chi, chiBarre, copulaFamily))
 }
