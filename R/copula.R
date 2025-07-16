@@ -179,7 +179,7 @@ CopulaSelection <- function(data, probaQuantile, nbDaysPerYear, nbYears, blockSi
 
       # Copula selection
 
-      listCopula <- VineCopula::BiCopEstList(Unif1, Unif2)$summary
+      listCopula <- VineCopula::BiCopEstList(Unif1, Unif2, familyset = listCopulaNumber)$summary
 
       orderedCopula <- listCopula[order(listCopula$BIC), ]
 
