@@ -160,7 +160,7 @@ CopulaSelection <- function(data, probaQuantile, nbDaysPerYear, nbYears, blockSi
     ### Bivariate
     dataBiv <- BivariateDeclustering(data1, data2, nbDaysPerYear, nbYears, c(threshold1, threshold2), blockSizes[3])
 
-    if (length(dataBiv$Var1) > 2) {
+    if (length(unique(dataBiv$Var1)) > 2 || length(unique(dataBiv$Var2)) > 2) {
 
       if (GPDparam1[3] < 0) {
         dataBiv[, 1][dataBiv[, 1] >= GPDparam1[1] - (GPDparam1[2] / GPDparam1[3])] <- GPDparam1[1] - (GPDparam1[2] / GPDparam1[3]) - 0.0001
@@ -431,7 +431,7 @@ CopulaApproach <- function(data, returnLevels, probaQuantile, nbDaysPerYear, nbY
   dataBiv <- BivariateDeclustering(data1, data2, nbDaysPerYear, nbYears, c(threshold1, threshold2), blockSizeBiv, logic)
   print("Bivariate Declustering OK")
 
-  if (length(dataBiv$Var1) <= 2) {
+  if (length(unique(dataBiv$Var1)) <= 3 || length(unique(dataBiv$Var2)) <= 3) {
     copula <- VineCopula::BiCop(0, 0) # Independent copula
   } else {
 
@@ -557,7 +557,7 @@ CopulaApproachReturnLevels <- function(data, returnPeriod, probaQuantile, nbDays
   dataBiv <- BivariateDeclustering(data1, data2, nbDaysPerYear, nbYears, c(threshold1, threshold2), blockSizeBiv, logic)
   print("Bivariate Declustering OK")
 
-  if (length(dataBiv$Var1) <= 2) {
+  if (length(unique(dataBiv$Var1)) <= 3 || length(unique(dataBiv$Var2)) <= 3) {
     copula <- VineCopula::BiCop(0, 0) # Independent copula
   } else {
 
