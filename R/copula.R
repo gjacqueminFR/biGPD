@@ -160,24 +160,24 @@ CopulaSelection <- function(data, probaQuantile, nbDaysPerYear, nbYears, blockSi
     ### Bivariate
     dataBiv <- BivariateDeclustering(data1, data2, nbDaysPerYear, nbYears, c(threshold1, threshold2), blockSizes[3])
 
-    if (length(unique(dataBiv$Var1)) > 2 && length(unique(dataBiv$Var2)) > 2) {
+    if (GPDparam1[3] < 0) {
+      dataBiv[, 1][dataBiv[, 1] >= GPDparam1[1] - (GPDparam1[2] / GPDparam1[3])] <- GPDparam1[1] - (GPDparam1[2] / GPDparam1[3]) - 0.0001
+    }
+    if (GPDparam2[3] < 0) {
+      dataBiv[, 2][dataBiv[, 2] >= GPDparam2[1] - (GPDparam2[2] / GPDparam2[3])] <- GPDparam2[1] - (GPDparam2[2] / GPDparam2[3]) - 0.0001
+    }
 
-      if (GPDparam1[3] < 0) {
-        dataBiv[, 1][dataBiv[, 1] >= GPDparam1[1] - (GPDparam1[2] / GPDparam1[3])] <- GPDparam1[1] - (GPDparam1[2] / GPDparam1[3]) - 0.0001
-      }
-      if (GPDparam2[3] < 0) {
-        dataBiv[, 2][dataBiv[, 2] >= GPDparam2[1] - (GPDparam2[2] / GPDparam2[3])] <- GPDparam2[1] - (GPDparam2[2] / GPDparam2[3]) - 0.0001
-      }
+    dataBiv[, 1] <- tea::pgpd(dataBiv[, 1], GPDparam1[1], GPDparam1[2], GPDparam1[3])
+    dataBiv[, 2] <- tea::pgpd(dataBiv[, 2], GPDparam2[1], GPDparam2[2], GPDparam2[3])
 
-      dataBiv[, 1] <- tea::pgpd(dataBiv[, 1], GPDparam1[1], GPDparam1[2], GPDparam1[3])
-      dataBiv[, 2] <- tea::pgpd(dataBiv[, 2], GPDparam2[1], GPDparam2[2], GPDparam2[3])
+    dataCop <- VineCopula::as.copuladata(dataBiv)
 
-      dataCop <- VineCopula::as.copuladata(dataBiv)
+    Unif1 <- dataCop[, 1]
+    Unif2 <- dataCop[, 2]
 
-      Unif1 <- dataCop[, 1]
-      Unif2 <- dataCop[, 2]
+    # Copula selection
 
-      # Copula selection
+    if (length(unique(Unif1)) > 2 && length(unique(Unif2)) > 2) {
 
       listCopula <- VineCopula::BiCopEstList(Unif1, Unif2, familyset = listCopulaNumber)$summary
 
