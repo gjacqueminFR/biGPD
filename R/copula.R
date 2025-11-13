@@ -160,43 +160,46 @@ CopulaSelection <- function(data, probaQuantile, nbDaysPerYear, nbYears, blockSi
     ### Bivariate
     dataBiv <- BivariateDeclustering(data1, data2, nbDaysPerYear, nbYears, c(threshold1, threshold2), blockSizes[3])
 
-    if (GPDparam1[3] < 0) {
-      dataBiv[, 1][dataBiv[, 1] >= GPDparam1[1] - (GPDparam1[2] / GPDparam1[3])] <- GPDparam1[1] - (GPDparam1[2] / GPDparam1[3]) - 0.0001
-    }
-    if (GPDparam2[3] < 0) {
-      dataBiv[, 2][dataBiv[, 2] >= GPDparam2[1] - (GPDparam2[2] / GPDparam2[3])] <- GPDparam2[1] - (GPDparam2[2] / GPDparam2[3]) - 0.0001
-    }
+    if (length(dataBiv$Var1) > 2) {
 
-    dataBiv[, 1] <- tea::pgpd(dataBiv[, 1], GPDparam1[1], GPDparam1[2], GPDparam1[3])
-    dataBiv[, 2] <- tea::pgpd(dataBiv[, 2], GPDparam2[1], GPDparam2[2], GPDparam2[3])
-
-    dataCop <- VineCopula::as.copuladata(dataBiv)
-
-    Unif1 <- dataCop[, 1]
-    Unif2 <- dataCop[, 2]
-
-    # Copula selection
-
-    if (length(unique(Unif1)) > 2 && length(unique(Unif2)) > 2) {
-
-      listCopula <- VineCopula::BiCopEstList(Unif1, Unif2, familyset = listCopulaNumber)$summary
-
-      orderedCopula <- listCopula[order(listCopula$BIC), ]
-
-      for (i in seq_along(orderedCopula$family)) {
-
-        copulaScore[copulaScore$Families == orderedCopula[i, ]$family, ]$ScoreSumPlaces <- i + copulaScore[copulaScore$Families == orderedCopula[i, ]$family, ]$ScoreSumPlaces
-
-        copulaScore[copulaScore$Families == orderedCopula[i, ]$family, ]$ScoreMeanBIC <- orderedCopula[i, ]$BIC + copulaScore[copulaScore$Families == orderedCopula[i, ]$family, ]$ScoreMeanBIC
-
-        if (as.integer(100 * q) == as.integer(100 * probaQuantile)) {
-          copulaScore[copulaScore$Families == orderedCopula[i, ]$family, ]$AppearAtSelectedQuantile <- TRUE
-        }
-
-        copulaScore[copulaScore$Families == orderedCopula[i, ]$family, ]$PercentAppearances <- copulaScore[copulaScore$Families == orderedCopula[i, ]$family, ]$PercentAppearances + 1 / length(listProbas)
-
+      if (GPDparam1[3] < 0) {
+        dataBiv[, 1][dataBiv[, 1] >= GPDparam1[1] - (GPDparam1[2] / GPDparam1[3])] <- GPDparam1[1] - (GPDparam1[2] / GPDparam1[3]) - 0.0001
+      }
+      if (GPDparam2[3] < 0) {
+        dataBiv[, 2][dataBiv[, 2] >= GPDparam2[1] - (GPDparam2[2] / GPDparam2[3])] <- GPDparam2[1] - (GPDparam2[2] / GPDparam2[3]) - 0.0001
       }
 
+      dataBiv[, 1] <- tea::pgpd(dataBiv[, 1], GPDparam1[1], GPDparam1[2], GPDparam1[3])
+      dataBiv[, 2] <- tea::pgpd(dataBiv[, 2], GPDparam2[1], GPDparam2[2], GPDparam2[3])
+
+      dataCop <- VineCopula::as.copuladata(dataBiv)
+
+      Unif1 <- dataCop[, 1]
+      Unif2 <- dataCop[, 2]
+
+      # Copula selection
+
+      if (length(unique(Unif1)) > 2 && length(unique(Unif2)) > 2) {
+
+        listCopula <- VineCopula::BiCopEstList(Unif1, Unif2, familyset = listCopulaNumber)$summary
+
+        orderedCopula <- listCopula[order(listCopula$BIC), ]
+
+        for (i in seq_along(orderedCopula$family)) {
+
+          copulaScore[copulaScore$Families == orderedCopula[i, ]$family, ]$ScoreSumPlaces <- i + copulaScore[copulaScore$Families == orderedCopula[i, ]$family, ]$ScoreSumPlaces
+
+          copulaScore[copulaScore$Families == orderedCopula[i, ]$family, ]$ScoreMeanBIC <- orderedCopula[i, ]$BIC + copulaScore[copulaScore$Families == orderedCopula[i, ]$family, ]$ScoreMeanBIC
+
+          if (as.integer(100 * q) == as.integer(100 * probaQuantile)) {
+            copulaScore[copulaScore$Families == orderedCopula[i, ]$family, ]$AppearAtSelectedQuantile <- TRUE
+          }
+
+          copulaScore[copulaScore$Families == orderedCopula[i, ]$family, ]$PercentAppearances <- copulaScore[copulaScore$Families == orderedCopula[i, ]$family, ]$PercentAppearances + 1 / length(listProbas)
+
+        }
+
+      }
     }
   }
 
