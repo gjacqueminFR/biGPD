@@ -345,10 +345,10 @@ BivariateReturnPeriodCopula <- function(GPDprobas, h, extremalIndexes, probaQuan
 
   hbarU1U2 <- Hbar(c(0, 0), FU1U2, h, extremalIndexes, probaQuantile, nbYears, Dparam)
 
-  hbarX1X2 <- hbarU1U2 * (1 + VineCopula::BiCopCDF(GPDprobas[1], GPDprobas[2], copula) - VineCopula::BiCopCDF(GPDprobas[1], 1, copula) - VineCopula::BiCopCDF(1, GPDprobas[2], copula))
-  returnPeriodBivariate <- - log(1 - probaOccurrence) * h / (nbDaysPerYear * hbarX1X2)
+  probaBiv <- 1 + VineCopula::BiCopCDF(GPDprobas[1], GPDprobas[2], copula) - VineCopula::BiCopCDF(GPDprobas[1], 1, copula) - VineCopula::BiCopCDF(1, GPDprobas[2], copula)
+  returnPeriodBivariate <- - log(1 - probaOccurrence) * h / (nbDaysPerYear * hbarU1U2 * probaBiv)
 
-  return(returnPeriodBivariate)
+  return(c(returnPeriodBivariate, probaBiv))
 }
 
 
