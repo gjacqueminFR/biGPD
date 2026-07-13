@@ -205,14 +205,60 @@ BivariateExceedenceProbability <- function(probas, empCDF, probaQuantile, FbarU1
     exp(-t) * (empCDF(t) - empCDF(-t))
   }
 
+  ExpValue1 <- - log(1 - probas[1])
+  ExpValue2 <- - log(1 - probas[2])
+
+  integralU1U2 <- cubintegrate(Integrand, lower = 0, upper = Inf, method = "pcubature")$integral
+
+
+  errorIntegral <- FALSE
+  tryCatch({
+    integralX1X2 <- ((1 - probas[2]) * cubintegrate(IntegrandPositive, lower = max(0, ExpValue1 - ExpValue2), upper = Inf, method = "pcubature")$value - (1 - probas[1]) * cubintegrate(IntegrandNegative, lower = - Inf, upper = min(0, ExpValue1 - ExpValue2), method = "pcubature")$value)
+  }, error = function(e) {errorIntegral <<- TRUE})
+
+  if (errorIntegral) {
+    Fbar <- 0
+  } else {
+    Fbar <- integralX1X2 * FbarU1U2 / (integralU1U2 * (1 - probaQuantile))
+  }
+
+  return(Fbar)
+}
+
+
+#' Compute the bivariate excess probability Fbar(x1,x2).
+#'
+#' @param probas A vector of size 2, with the 2 univariate probabilities. The two probabilities are likely close to 1.
+#' @param empCDF The empirical cdf of Delta.
+#' @param probaQuantile Data above the thresholds of this probability are used to compute the probability. The value has a small impact over the probability. It should be close to 1, 0.95 is a classical value. The same value is used for both margins for simplicity.
+#' @param FU1U2 The probability to be below both thresholds (quantiles of probability probaQuantile).
+#' @return The bivariate excess probability.
+#' @export
+
+BivariateExceedenceProbability2 <- function(probas, empCDF, probaQuantile, FU1U2) {
+
+  IntegrandPositive <- function(t) {
+    exp(-t) * empCDF(t)
+  }
+  IntegrandNegative <- function(t) {
+    exp(t) * empCDF(t)
+  }
+  Integrand <- function(t) {
+    exp(-t) * (empCDF(t) - empCDF(-t))
+  }
+
   ExpValueTP <- - log(1 - probas[1])
   ExpValueAPI <- - log(1 - probas[2])
 
-  integralU1U2 <- integrate(Integrand, lower = 0, upper = Inf, subdivisions = 2000)$value
+  integralU1U2 <- cubintegrate(Integrand, lower = 0, upper = Inf, method = "pcubature")$integral
+  print(integralU1U2)
+  print((FU1U2 + 2 * (1 - probaQuantile) - 1) / (1 - FU1U2))
+  print((FU1U2 + 2 * (1 - probaQuantile) - 1) / (1 - FU1U2) - integralU1U2)
 
-  integralX1X2 <- ((1 - probas[2]) * integrate(IntegrandPositive, lower = max(0, ExpValueTP - ExpValueAPI), upper = Inf, subdivisions = 2000)$value - (1 - probas[1]) * integrate(IntegrandNegative, lower = - Inf, upper = min(0, ExpValueTP - ExpValueAPI), subdivisions = 2000)$value)
+  integralX1X2 <- ((1 - probas[2]) * cubintegrate(IntegrandPositive, lower = max(0, ExpValueTP - ExpValueAPI), upper = Inf, method = "pcubature")$integral - (1 - probas[1]) * cubintegrate(IntegrandNegative, lower = - Inf, upper = min(0, ExpValueTP - ExpValueAPI), method = "pcubature")$integral)
 
-  Fbar <- integralX1X2 * FbarU1U2 / (integralU1U2 * (1 - probaQuantile))
+  Fbar <- integralX1X2 * (1 - FU1U2) / (1 - probaQuantile)
+  print("here")
 
   return(Fbar)
 }
@@ -301,6 +347,7 @@ BiGPDApproach <- function(data, returnLevels, EGPDtypes, initParams1, initParams
       FbarX1X2 <- 0
     } else {
       FbarX1X2 <- BivariateExceedenceProbability(c(proba1, proba2), ECDFDelta, probaQuantile, FbarU1U2)
+      #FbarX1X2 <- BivariateExceedenceProbability2(c(proba1, proba2), ECDFDelta, probaQuantile, FU1U2)
     }
 
     # Constraint on the bivariate extremal index
@@ -320,6 +367,7 @@ BiGPDApproach <- function(data, returnLevels, EGPDtypes, initParams1, initParams
   }
 
   chi <- FbarU1U2 / (1 - probaQuantile)
+  #chi <- (FU1U2 + 2 * (1 - probaQuantile) - 1) / (1 - probaQuantile)
   chiBarre <- (log(1 - 0.9999) - log(chi)) / (log(1 - 0.9999) + log(chi))
 
   return(c(returnPeriod1, returnPeriod2, returnPeriodBiv, HbarX1X2, chi, chiBarre))
