@@ -190,6 +190,7 @@ ReturnPeriodBiGPD <- function(probas, extremalIndexes, h, nbDaysPerYear, probaOc
 #' @param empCDF The empirical cdf of Delta.
 #' @param probaQuantile Data above the thresholds of this probability are used to compute the probability. The value has a small impact over the probability. It should be close to 1, 0.95 is a classical value. The same value is used for both margins for simplicity.
 #' @param FbarU1U2 The probability to be above both thresholds (quantiles of probability probaQuantile).
+#' @importFrom cubature cubintegrate
 #' @return The bivariate excess probability.
 #' @export
 
@@ -232,6 +233,7 @@ BivariateExceedenceProbability <- function(probas, empCDF, probaQuantile, FbarU1
 #' @param empCDF The empirical cdf of Delta.
 #' @param probaQuantile Data above the thresholds of this probability are used to compute the probability. The value has a small impact over the probability. It should be close to 1, 0.95 is a classical value. The same value is used for both margins for simplicity.
 #' @param FU1U2 The probability to be below both thresholds (quantiles of probability probaQuantile).
+#' @importFrom cubature cubintegrate
 #' @return The bivariate excess probability.
 #' @export
 
