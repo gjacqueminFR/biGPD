@@ -252,14 +252,10 @@ BivariateExceedenceProbability2 <- function(probas, empCDF, probaQuantile, FU1U2
   ExpValueAPI <- - log(1 - probas[2])
 
   integralU1U2 <- cubature::cubintegrate(Integrand, lower = 0, upper = Inf, method = "pcubature")$integral
-  print(integralU1U2)
-  print((FU1U2 + 2 * (1 - probaQuantile) - 1) / (1 - FU1U2))
-  print((FU1U2 + 2 * (1 - probaQuantile) - 1) / (1 - FU1U2) - integralU1U2)
 
   integralX1X2 <- ((1 - probas[2]) * cubature::cubintegrate(IntegrandPositive, lower = max(0, ExpValueTP - ExpValueAPI), upper = Inf, method = "pcubature")$integral - (1 - probas[1]) * cubature::cubintegrate(IntegrandNegative, lower = - Inf, upper = min(0, ExpValueTP - ExpValueAPI), method = "pcubature")$integral)
 
   Fbar <- integralX1X2 * (1 - FU1U2) / (1 - probaQuantile)
-  print("here")
 
   return(Fbar)
 }
@@ -282,7 +278,7 @@ BivariateExceedenceProbability2 <- function(probas, empCDF, probaQuantile, FU1U2
 #' @export
 
 BiGPDApproach <- function(data, returnLevels, EGPDtypes, initParams1, initParams2, probaQuantile, nbDaysPerYear, nbYears, h, Dparam, probaOccurrence) {
-  print("start1")
+
   if (missing(probaOccurrence)) {
     probaOccurrence <- 1 - exp(-1)
   }
@@ -292,7 +288,6 @@ BiGPDApproach <- function(data, returnLevels, EGPDtypes, initParams1, initParams
 
   extremalIndex1 <- UnivariateExtremalIndex(data[, 1], probaQuantile, nbYears, Dparam)
   extremalIndex2 <- UnivariateExtremalIndex(data[, 2], probaQuantile, nbYears, Dparam)
-  print("Univariate Extremal Index OK")
 
   # Get the probability of no rain, and filter the zeros
   probaZero1 <- length(data[, 1][data[, 1] == 0]) / length(data[, 1])
@@ -302,7 +297,6 @@ BiGPDApproach <- function(data, returnLevels, EGPDtypes, initParams1, initParams
 
   EGPDparam1 <- EstimateEGPDParameters(dataFiltered1, EGPDtypes[1], initParams1)
   EGPDparam2 <- EstimateEGPDParameters(dataFiltered2, EGPDtypes[2], initParams2)
-  print("EGPD parameters OK")
 
   # Calculate univariate return periods
   proba1 <- ProbaEGPD(returnLevels[1], EGPDtypes[1], EGPDparam1, probaZero1)
@@ -310,7 +304,6 @@ BiGPDApproach <- function(data, returnLevels, EGPDtypes, initParams1, initParams
 
   returnPeriod1 <- -log(1 - probaOccurrence) / (nbDaysPerYear * extremalIndex1 * (1 - proba1))
   returnPeriod2 <- -log(1 - probaOccurrence) / (nbDaysPerYear * extremalIndex2 * (1 - proba2))
-  print("Univariate return period OK")
 
   # Constant estimated with frequency
   dataAbove <- data[data[, 1] >= threshold1 & data[, 2] >= threshold2, ]
@@ -333,14 +326,12 @@ BiGPDApproach <- function(data, returnLevels, EGPDtypes, initParams1, initParams
     # ECDF
     delta <- (exp1 - thresholdExp1) - (exp2 - thresholdExp2)
     ECDFDelta <- ecdf(delta)
-    print("ECDF OK")
 
     # Estimate bivariate extremal index
     frechet1 <- EGPDtoFrechet(data[, 1], EGPDtypes[1], EGPDparam1, probaZero1)
     frechet2 <- EGPDtoFrechet(data[, 2], EGPDtypes[2], EGPDparam2, probaZero2)
 
     extremalIndexBiv <- BivariateExtremalIndex(frechet1, frechet2, probaQuantile, c(proba1, proba2), nbYears, Dparam)
-    print("Bivariate Extremal Index OK")
 
     # Calculate bivariate return periods
 
@@ -361,7 +352,6 @@ BiGPDApproach <- function(data, returnLevels, EGPDtypes, initParams1, initParams
     }
 
     returnPeriodBiv <- ReturnPeriodBiGPD(c(proba1, proba2, FbarX1X2), c(extremalIndex1, extremalIndex2, extremalIndexBiv), h, nbDaysPerYear, probaOccurrence)
-    print("Bivariate return period OK")
 
     # Probability of non-concurrent excess
     HbarX1X2 <- h / (nbDaysPerYear * returnPeriodBiv)
@@ -425,7 +415,7 @@ ReturnPeriodBiGPDReturnLevels <- function(probaRL, probaQuantile, FbarU1U2, extr
 #' @export
 
 BiGPDApproachReturnLevels <- function(data, returnPeriod, EGPDtypes, initParams1, initParams2, probaQuantile, nbDaysPerYear, nbYears, h, Dparam, probaOccurrence) {
-  print("start1")
+
   if (missing(probaOccurrence)) {
     probaOccurrence <- 1 - exp(-1)
   }
@@ -435,7 +425,6 @@ BiGPDApproachReturnLevels <- function(data, returnPeriod, EGPDtypes, initParams1
 
   extremalIndex1 <- UnivariateExtremalIndex(data[, 1], probaQuantile, nbYears, Dparam)
   extremalIndex2 <- UnivariateExtremalIndex(data[, 2], probaQuantile, nbYears, Dparam)
-  print("Univariate Extremal Index OK")
 
   # Get the probability of no rain, and filter the zeros
   probaZero1 <- length(data[, 1][data[, 1] == 0]) / length(data[, 1])
@@ -445,7 +434,6 @@ BiGPDApproachReturnLevels <- function(data, returnPeriod, EGPDtypes, initParams1
 
   EGPDparam1 <- EstimateEGPDParameters(dataFiltered1, EGPDtypes[1], initParams1)
   EGPDparam2 <- EstimateEGPDParameters(dataFiltered2, EGPDtypes[2], initParams2)
-  print("EGPD parameters OK")
 
   # Transformation to exponential margins
   dataBiv <- data[data[, 1] > threshold1 | data[, 2] > threshold2, ]
@@ -459,14 +447,12 @@ BiGPDApproachReturnLevels <- function(data, returnPeriod, EGPDtypes, initParams1
   # ECDF
   delta <- (exp1 - thresholdExp1) - (exp2 - thresholdExp2)
   ECDFDelta <- ecdf(delta)
-  print("ECDF OK")
 
   # Estimate bivariate extremal index
   frechet1 <- EGPDtoFrechet(data[, 1], EGPDtypes[1], EGPDparam1, probaZero1)
   frechet2 <- EGPDtoFrechet(data[, 2], EGPDtypes[2], EGPDparam2, probaZero2)
 
   extremalIndexBivOG <- BivariateExtremalIndex(frechet1, frechet2, probaQuantile, c(0.95, 0.95), nbYears, Dparam) # The value of the univariate probability is not necessary here, the only thing that matters is that proba1 = proba2.
-  print("Bivariate Extremal Index OK")
 
   # Calculate return levels
   dataAbove <- data[data[, 1] >= threshold1 & data[, 2] >= threshold2, ]
@@ -498,7 +484,6 @@ BiGPDApproachReturnLevels <- function(data, returnPeriod, EGPDtypes, initParams1
 
   returnLevel1 <- ValueEGPD(probaRL, EGPDtypes[1], EGPDparam1, probaZero1)
   returnLevel2 <- ValueEGPD(probaRL, EGPDtypes[2], EGPDparam2, probaZero2)
-  print("Return levels OK")
 
   # Chi and chi barre values
   chi <- FbarU1U2 / (1 - probaQuantile)

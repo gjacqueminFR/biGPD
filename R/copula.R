@@ -364,7 +364,7 @@ BivariateReturnPeriodCopula <- function(GPDprobas, h, extremalIndexes, probaQuan
 #' @export
 
 CopulaApproach <- function(data, returnLevels, probaQuantile, nbDaysPerYear, nbYears, h, blockSizes, Dparam, probaOccurrence, logic) {
-  print("start")
+
   data1 <- data[, 1]
   threshold1 <- quantile(data1, probaQuantile)
   data2 <- data[, 2]
@@ -372,7 +372,6 @@ CopulaApproach <- function(data, returnLevels, probaQuantile, nbDaysPerYear, nbY
 
   extremalIndex1 <- UnivariateExtremalIndex(data1, probaQuantile, nbYears, Dparam)
   extremalIndex2 <- UnivariateExtremalIndex(data2, probaQuantile, nbYears, Dparam)
-  print("Univariate Extremal Index OK")
 
   if (missing(blockSizes)) {
     blockSize1 <- ceiling(1 / extremalIndex1)
@@ -396,14 +395,12 @@ CopulaApproach <- function(data, returnLevels, probaQuantile, nbDaysPerYear, nbY
   # Estimate univariate parameters
   GPDparam1 <- EstimateGPDParameters(dataDecluster1, threshold1)
   GPDparam2 <- EstimateGPDParameters(dataDecluster2, threshold2)
-  print("GPD parameters OK")
 
   # Calculate univariate return periods
   GPDproba1 <- GetGPDproba(returnLevels[1], GPDparam1)
   GPDproba2 <- GetGPDproba(returnLevels[2], GPDparam2)
   returnPeriod1 <- UnivariateReturnPeriodCopula(GPDproba1, extremalIndex1, nbDaysPerYear, probaQuantile, h, probaOccurrence)
   returnPeriod2 <- UnivariateReturnPeriodCopula(GPDproba2, extremalIndex2, nbDaysPerYear, probaQuantile, h, probaOccurrence)
-  print("Univariate return period OK")
 
   # Bivariate
 
@@ -414,7 +411,6 @@ CopulaApproach <- function(data, returnLevels, probaQuantile, nbDaysPerYear, nbY
   frechet1 <- -1 / log(ECDF1(data1))
   frechet2 <- -1 / log(ECDF2(data2))
   extremalIndexBiv <- BivariateExtremalIndex(frechet1, frechet2, probaQuantile, c(probaQuantile, probaQuantile), nbYears, Dparam)
-  print("Bivariate Extremal Index OK")
 
   # Bivariate declustering
   if (missing(blockSizes)) {
@@ -428,7 +424,6 @@ CopulaApproach <- function(data, returnLevels, probaQuantile, nbDaysPerYear, nbY
   }
 
   dataBiv <- BivariateDeclustering(data1, data2, nbDaysPerYear, nbYears, c(threshold1, threshold2), blockSizeBiv, logic)
-  print("Bivariate Declustering OK")
 
   if (length(unique(dataBiv$Var1)) <= 3 && length(unique(dataBiv$Var2)) <= 3) {
     copula <- VineCopula::BiCop(0, 0) # Independent copula
@@ -453,7 +448,6 @@ CopulaApproach <- function(data, returnLevels, probaQuantile, nbDaysPerYear, nbY
     copulaFamily <- CopulaSelection(data, probaQuantile, nbDaysPerYear, nbYears, c(blockSize1, blockSize2, blockSizeBiv))
     copula <- VineCopula::BiCopEst(Unif1, Unif2, family = VineCopula::BiCopName(copulaFamily), se = TRUE)
   }
-  print("Copula OK")
 
   # Calculate bivariate return period
   dataBelow <- data[data[, 1] <= threshold1 & data[, 2] <= threshold2, ]
@@ -462,7 +456,6 @@ CopulaApproach <- function(data, returnLevels, probaQuantile, nbDaysPerYear, nbY
   out <- BivariateReturnPeriodCopula(c(GPDproba1, GPDproba2), h, c(extremalIndex1, extremalIndex2, extremalIndexBiv), probaQuantile, copula, FU1U2, nbDaysPerYear, nbYears, Dparam, probaOccurrence)
   returnPeriodBiv <- out[1]
   probaBiv <- out[2]
-  print("Bivariate return period OK")
 
   # Transform negative or NA return periods to Inf
   if (is.na(returnPeriodBiv)) {
@@ -499,7 +492,7 @@ CopulaApproach <- function(data, returnLevels, probaQuantile, nbDaysPerYear, nbY
 #' @export
 
 CopulaApproachReturnLevels <- function(data, returnPeriod, probaQuantile, nbDaysPerYear, nbYears, h, blockSizes, Dparam, probaOccurrence, logic) {
-  print("start")
+
   data1 <- data[, 1]
   threshold1 <- quantile(data1, probaQuantile)
   data2 <- data[, 2]
@@ -507,7 +500,6 @@ CopulaApproachReturnLevels <- function(data, returnPeriod, probaQuantile, nbDays
 
   extremalIndex1 <- UnivariateExtremalIndex(data1, probaQuantile, nbYears, Dparam)
   extremalIndex2 <- UnivariateExtremalIndex(data2, probaQuantile, nbYears, Dparam)
-  print("Univariate Extremal Index OK")
 
   if (missing(blockSizes)) {
     blockSize1 <- ceiling(1 / extremalIndex1)
@@ -531,7 +523,6 @@ CopulaApproachReturnLevels <- function(data, returnPeriod, probaQuantile, nbDays
   # Estimate univariate parameters
   GPDparam1 <- EstimateGPDParameters(dataDecluster1, threshold1)
   GPDparam2 <- EstimateGPDParameters(dataDecluster2, threshold2)
-  print("GPD parameters OK")
 
   # Bivariate
 
@@ -542,7 +533,6 @@ CopulaApproachReturnLevels <- function(data, returnPeriod, probaQuantile, nbDays
   frechet1 <- -1 / log(ECDF1(data1))
   frechet2 <- -1 / log(ECDF2(data2))
   extremalIndexBiv <- BivariateExtremalIndex(frechet1, frechet2, probaQuantile, c(probaQuantile, probaQuantile), nbYears, Dparam)
-  print("Bivariate Extremal Index OK")
 
   # Bivariate declustering
   if (missing(blockSizes)) {
@@ -556,7 +546,6 @@ CopulaApproachReturnLevels <- function(data, returnPeriod, probaQuantile, nbDays
   }
 
   dataBiv <- BivariateDeclustering(data1, data2, nbDaysPerYear, nbYears, c(threshold1, threshold2), blockSizeBiv, logic)
-  print("Bivariate Declustering OK")
 
   if (length(unique(dataBiv$Var1)) <= 3 && length(unique(dataBiv$Var2)) <= 3) {
     copula <- VineCopula::BiCop(0, 0) # Independent copula
@@ -581,7 +570,6 @@ CopulaApproachReturnLevels <- function(data, returnPeriod, probaQuantile, nbDays
     copulaFamily <- CopulaSelection(data, probaQuantile, nbDaysPerYear, nbYears, c(blockSize1, blockSize2, blockSizeBiv))
     copula <- VineCopula::BiCopEst(Unif1, Unif2, family = VineCopula::BiCopName(copulaFamily), se = TRUE)
   }
-  print("Copula OK")
 
   # Calculate return levels
   dataBelow <- data[data[, 1] <= threshold1 & data[, 2] <= threshold2, ]
@@ -614,11 +602,9 @@ CopulaApproachReturnLevels <- function(data, returnPeriod, probaQuantile, nbDays
       res <- BivariateReturnPeriodCopula(c(GPDprobaRL1, GPDprobaRL2), h, c(extremalIndex1, extremalIndex2, extremalIndexBiv), probaQuantile, copula, FU1U2, nbDaysPerYear, nbYears, Dparam, probaOccurrence)[1] - returnPeriod
     }
   }
-  print(probaRL)
 
   returnLevel1 <- GetGPDvalue(GPDprobaRL1, GPDparam1)
   returnLevel2 <- GetGPDvalue(GPDprobaRL2, GPDparam2)
-  print("Return levels OK")
 
   chi <- max(2 - log(VineCopula::BiCopCDF(0.9999, 0.9999, copula)) / log(0.9999), 0)
   chiBarre <- 2 * log(1 - 0.9999) / log(1 - 2 * 0.9999 + VineCopula::BiCopCDF(0.9999, 0.9999, copula)) - 1
