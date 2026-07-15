@@ -18,6 +18,8 @@ BivariateReturnPeriodCopula(
 )
 }
 \arguments{
+\item{GPDprobas}{The cdf value at the return level value for a GPD. A vector of size 2, one for each variable.}
+
 \item{h}{The parameter of non-concurrence (integer).}
 
 \item{extremalIndexes}{A list of size 3, with the extremal index for the first variable in first, the one for the second variable in second and the bivaraite extremal index in third.}
@@ -35,12 +37,6 @@ BivariateReturnPeriodCopula(
 \item{Dparam}{Cf documentation of the dgaps function of the exdex package. Default value is 3.}
 
 \item{probaOccurrence}{The probability that the values are reached before the return period time. Default value to 0.63.}
-
-\item{returnLevels}{A vector of size 2, one for each time series. Return periods correspond to the return levels.}
-
-\item{GPDParam1}{The parameters of the GPD for the first variable, in a list with the following order: c(threshold, sigma, xi).}
-
-\item{GPDParam2}{The parameters of the GPD for the second variable, in a list with the following order: c(threshold, sigma, xi).}
 }
 \value{
 The bivariate return period with the copula approach.

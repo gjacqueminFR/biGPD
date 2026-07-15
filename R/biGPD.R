@@ -37,8 +37,8 @@ UnivariateExtremalIndex <- function(data, probaQuantile, nbYears, Dparam) {
 
 #' Bivariate extremal index
 #'
-#' @param data1 A vector of data for which the extremal index will be estimated.
-#' @param data2 A vector of data for which their extremal index will be estimated.
+#' @param frechetData1 A vector of data for which the extremal index will be estimated.
+#' @param frechetData2 A vector of data for which the extremal index will be estimated.
 #' @param probaQuantile Data above the threshold of this probability are used to estimate the extremal index. The value has an impact over the estimation. It should be close to 1, 0.95 is a classical value.
 #' @param probas A vector of probability at which the bivariate extermal index is estimated.
 #' @param nbYears The number of distinct years. Default value is 1.
@@ -214,7 +214,7 @@ BivariateExceedenceProbability <- function(probas, empCDF, probaQuantile, FbarU1
 
   errorIntegral <- FALSE
   tryCatch({
-    integralX1X2 <- ((1 - probas[2]) * cubintegrate(IntegrandPositive, lower = max(0, ExpValue1 - ExpValue2), upper = Inf, method = "pcubature")$value - (1 - probas[1]) * cubintegrate(IntegrandNegative, lower = - Inf, upper = min(0, ExpValue1 - ExpValue2), method = "pcubature")$value)
+    integralX1X2 <- ((1 - probas[2]) * cubintegrate(IntegrandPositive, lower = max(0, ExpValue1 - ExpValue2), upper = Inf, method = "pcubature")$integral - (1 - probas[1]) * cubintegrate(IntegrandNegative, lower = - Inf, upper = min(0, ExpValue1 - ExpValue2), method = "pcubature")$integral)
   }, error = function(e) {errorIntegral <<- TRUE})
 
   if (errorIntegral) {
@@ -378,8 +378,12 @@ BiGPDApproach <- function(data, returnLevels, EGPDtypes, initParams1, initParams
 
 #' Bivariate return period when searching for return levels.
 #'
-#' @param probas A vector of size 3, with the 2 univariate probabilities first and then the probability of bivariate exceedence. The first two probabilities are likely close to 1, whereas the third one is likely close to 0.
-#' @param extremalIndexes A vector of size 3, with the 2 univariate extremal indexes first and then the bivariate extremal index.
+#' @param probaRL A float between 0 and 1. The return levels correspond to the quantiles of this probability.
+#' @param probaQuantile A float between 0 and 1. Data above the thresholds of this probability are used to compute the bivariate exceedence probability. The value has a small impact over the probability. It should be close to 1, 0.95 is a classical value. The same value is used for both margins for simplicity.
+#' @param FbarU1U2 The probability to be above both thresholds (quantiles of probability probaQuantile).
+#' @param extremalIndex1 The univariate extremal indexe of the first variable.
+#' @param extremalIndex2 The univariate extremal indexe of the second variable.
+#' @param extremalIndexBivOG The bivariate extremal index.
 #' @param h The parameter of non-concurrence (integer).
 #' @param nbDaysPerYear The number of days considered per year (integer).
 #' @param probaOccurrence The probability that the values are reached before the return period time. Default value to 0.63.

@@ -39,7 +39,7 @@ UnivariateDeclustering <- function(data, nbDaysPerYear, nbYears, threshold, bloc
 #' Decluster bivariate data.
 #'
 #' @param data1 A vector of data for the first variable.
-#' @param data1 A vector of data for the second variable.
+#' @param data2 A vector of data for the second variable.
 #' @param nbDaysPerYear The number of days considered per year (integer).
 #' @param nbYears The number of distinct years.
 #' @param thresholds A vector of size 2. The first threshold is for the first variable, and the second value is for the second variable. The threshold is the value above which data are supposed to follow a GPD.
@@ -266,8 +266,7 @@ GetGPDvalue <- function(GPDproba, GPDParam) {
 
 #' Calculate the univariate return period with the GPD approach
 #'
-#' @param returnLevel The value defining the return period.
-#' @param GPDParam The parameters of the GPD. In a list with the following order: c(threshold, sigma, xi).
+#' @param proba The GPD probability corresponding to the return level.
 #' @param extremalIndex The extremal index cf UnivariateExtremalIndex.
 #' @param nbDaysPerYear The number of days considered per year (integer).
 #' @param probaQuantile The probabilityof the value above which data are supposed to follow a GPD. A common value is 0.95.
@@ -290,36 +289,33 @@ UnivariateReturnPeriodCopula <- function(proba, extremalIndex, nbDaysPerYear, pr
 
 #' Calculate the non-concurrent joint excess probability.
 #'
-#' @param probas 
-#' @param FU1U2 
+#' @param FU1U2 The probability to be below both thresholds (quantiles of probability probaQuantile).
 #' @param h The parameter of non-concurrence (integer).
 #' @param extremalIndexes A list of size 3, with the extremal index for the first variable in first, the one for the second variable in second and the bivaraite extremal index in third.
-#' @param probaQuantile The probabilityof the value above which data are supposed to follow a GPD. A common value is 0.95.
+#' @param probaQuantile The probability of the value above which data are supposed to follow a GPD. A common value is 0.95.
 #' @param nbYears The number of distinct years. Default value is 1.
 #' @param Dparam Cf documentation of the dgaps function of the exdex package. Default value is 3.
 #' @return The non-concurrent joint excess probability.
 #' @export
 
-Hbar <- function(probas, FU1U2, h, extremalIndexes, probaQuantile, nbYears, Dparam) {
+Hbar <- function(FU1U2, h, extremalIndexes, probaQuantile, nbYears, Dparam) {
 
-  minExtremalIndexValue <- max((1 - probaQuantile) * (1 - probas[1]) * extremalIndexes[1] / (1 - FU1U2), (1 - probaQuantile) * (1 - probas[2]) * extremalIndexes[2] / (1 - FU1U2))
+  minExtremalIndexValue <- max((1 - probaQuantile) * extremalIndexes[1] / (1 - FU1U2), (1 - probaQuantile) * extremalIndexes[2] / (1 - FU1U2))
   if (extremalIndexes[3] < minExtremalIndexValue) {
     extremalIndexBiv <- minExtremalIndexValue
   } else {
     extremalIndexBiv <- extremalIndexes[3]
   }
 
-  Hbar <- (1 - probaQuantile^(extremalIndexes[1] * h)) * (1 - probas[1]) - 1 + (1 - probaQuantile^(extremalIndexes[2] * h)) * (1 - probas[2]) + FU1U2^(extremalIndexBiv * h)
+  res <- 1 - probaQuantile^(extremalIndexes[1] * h) - probaQuantile^(extremalIndexes[2] * h) + FU1U2^(extremalIndexBiv * h)
 
-  return(Hbar)
+  return(res)
 }
 
 
 #' Calculate the bivariate return period with the copula approach.
 #'
-#' @param returnLevels A vector of size 2, one for each time series. Return periods correspond to the return levels.
-#' @param GPDParam1 The parameters of the GPD for the first variable, in a list with the following order: c(threshold, sigma, xi).
-#' @param GPDParam2 The parameters of the GPD for the second variable, in a list with the following order: c(threshold, sigma, xi).
+#' @param GPDprobas The cdf value at the return level value for a GPD. A vector of size 2, one for each variable.
 #' @param h The parameter of non-concurrence (integer).
 #' @param extremalIndexes A list of size 3, with the extremal index for the first variable in first, the one for the second variable in second and the bivaraite extremal index in third.
 #' @param probaQuantile The probabilityof the value above which data are supposed to follow a GPD. A common value is 0.95.
@@ -343,7 +339,7 @@ BivariateReturnPeriodCopula <- function(GPDprobas, h, extremalIndexes, probaQuan
     Dparam <- 3
   }
 
-  hbarU1U2 <- Hbar(c(0, 0), FU1U2, h, extremalIndexes, probaQuantile, nbYears, Dparam)
+  hbarU1U2 <- Hbar(FU1U2, h, extremalIndexes, probaQuantile, nbYears, Dparam)
 
   probaBiv <- 1 + VineCopula::BiCopCDF(GPDprobas[1], GPDprobas[2], copula) - VineCopula::BiCopCDF(GPDprobas[1], 1, copula) - VineCopula::BiCopCDF(1, GPDprobas[2], copula)
   returnPeriodBivariate <- - log(1 - probaOccurrence) * h / (nbDaysPerYear * hbarU1U2 * probaBiv)

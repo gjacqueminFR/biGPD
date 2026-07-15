@@ -17,15 +17,23 @@ ReturnPeriodBiGPDReturnLevels(
 )
 }
 \arguments{
+\item{probaRL}{A float between 0 and 1. The return levels correspond to the quantiles of this probability.}
+
+\item{probaQuantile}{A float between 0 and 1. Data above the thresholds of this probability are used to compute the bivariate exceedence probability. The value has a small impact over the probability. It should be close to 1, 0.95 is a classical value. The same value is used for both margins for simplicity.}
+
+\item{FbarU1U2}{The probability to be above both thresholds (quantiles of probability probaQuantile).}
+
+\item{extremalIndex1}{The univariate extremal indexe of the first variable.}
+
+\item{extremalIndex2}{The univariate extremal indexe of the second variable.}
+
+\item{extremalIndexBivOG}{The bivariate extremal index.}
+
 \item{h}{The parameter of non-concurrence (integer).}
 
 \item{nbDaysPerYear}{The number of days considered per year (integer).}
 
 \item{probaOccurrence}{The probability that the values are reached before the return period time. Default value to 0.63.}
-
-\item{probas}{A vector of size 3, with the 2 univariate probabilities first and then the probability of bivariate exceedence. The first two probabilities are likely close to 1, whereas the third one is likely close to 0.}
-
-\item{extremalIndexes}{A vector of size 3, with the 2 univariate extremal indexes first and then the bivariate extremal index.}
 }
 \value{
 The bivariate return period.

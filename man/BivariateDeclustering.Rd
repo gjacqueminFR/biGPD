@@ -15,7 +15,9 @@ BivariateDeclustering(
 )
 }
 \arguments{
-\item{data1}{A vector of data for the second variable.}
+\item{data1}{A vector of data for the first variable.}
+
+\item{data2}{A vector of data for the second variable.}
 
 \item{nbDaysPerYear}{The number of days considered per year (integer).}
 

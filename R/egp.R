@@ -34,7 +34,6 @@
 #' @export
 #' @importFrom grDevices rgb
 #' @importFrom graphics hist layout
-#' @seealso \code{\link{egp.fit}}, \code{\link{egp}}, \code{\link{extgp}}
 #' @references Naveau, P., R. Huser, P. Ribereau, and A. Hannart (2016), Modeling jointly low, moderate, and heavy rainfall intensities without a threshold selection, \emph{Water Resour. Res.}, 52, 2753-2769, \code{doi:10.1002/2015WR018552}.
 #' @examples
 #' \dontrun{

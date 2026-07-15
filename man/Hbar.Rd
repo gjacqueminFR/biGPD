@@ -4,18 +4,16 @@
 \alias{Hbar}
 \title{Calculate the non-concurrent joint excess probability.}
 \usage{
-Hbar(probas, FU1U2, h, extremalIndexes, probaQuantile, nbYears, Dparam)
+Hbar(FU1U2, h, extremalIndexes, probaQuantile, nbYears, Dparam)
 }
 \arguments{
-\item{probas}{}
-
-\item{FU1U2}{}
+\item{FU1U2}{The probability to be below both thresholds (quantiles of probability probaQuantile).}
 
 \item{h}{The parameter of non-concurrence (integer).}
 
 \item{extremalIndexes}{A list of size 3, with the extremal index for the first variable in first, the one for the second variable in second and the bivaraite extremal index in third.}
 
-\item{probaQuantile}{The probabilityof the value above which data are supposed to follow a GPD. A common value is 0.95.}
+\item{probaQuantile}{The probability of the value above which data are supposed to follow a GPD. A common value is 0.95.}
 
 \item{nbYears}{The number of distinct years. Default value is 1.}
 
