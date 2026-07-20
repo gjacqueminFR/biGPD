@@ -208,12 +208,12 @@ BivariateExceedenceProbability <- function(probas, empCDF, probaQuantile, FbarU1
   ExpValue1 <- - log(1 - probas[1])
   ExpValue2 <- - log(1 - probas[2])
 
-  integralU1U2 <- cubature::cubintegrate(Integrand, lower = 0, upper = Inf, method = "pcubature")$integral
+  integralU1U2 <- cubature::cubintegrate(Integrand, lower = 0, upper = Inf, method = "hcubature")$integral
 
 
   errorIntegral <- FALSE
   tryCatch({
-    integralX1X2 <- ((1 - probas[2]) * cubature::cubintegrate(IntegrandPositive, lower = max(0, ExpValue1 - ExpValue2), upper = Inf, method = "pcubature")$integral - (1 - probas[1]) * cubature::cubintegrate(IntegrandNegative, lower = - Inf, upper = min(0, ExpValue1 - ExpValue2), method = "pcubature")$integral)
+    integralX1X2 <- ((1 - probas[2]) * cubature::cubintegrate(IntegrandPositive, lower = max(0, ExpValue1 - ExpValue2), upper = Inf, method = "hcubature")$integral - (1 - probas[1]) * cubature::cubintegrate(IntegrandNegative, lower = - Inf, upper = min(0, ExpValue1 - ExpValue2), method = "hcubature")$integral)
   }, error = function(e) {errorIntegral <<- TRUE})
 
   if (errorIntegral) {
@@ -251,9 +251,9 @@ BivariateExceedenceProbability2 <- function(probas, empCDF, probaQuantile, FU1U2
   ExpValueTP <- - log(1 - probas[1])
   ExpValueAPI <- - log(1 - probas[2])
 
-  integralU1U2 <- cubature::cubintegrate(Integrand, lower = 0, upper = Inf, method = "pcubature")$integral
+  integralU1U2 <- cubature::cubintegrate(Integrand, lower = 0, upper = Inf, method = "hcubature")$integral
 
-  integralX1X2 <- ((1 - probas[2]) * cubature::cubintegrate(IntegrandPositive, lower = max(0, ExpValueTP - ExpValueAPI), upper = Inf, method = "pcubature")$integral - (1 - probas[1]) * cubature::cubintegrate(IntegrandNegative, lower = - Inf, upper = min(0, ExpValueTP - ExpValueAPI), method = "pcubature")$integral)
+  integralX1X2 <- ((1 - probas[2]) * cubature::cubintegrate(IntegrandPositive, lower = max(0, ExpValueTP - ExpValueAPI), upper = Inf, method = "hcubature")$integral - (1 - probas[1]) * cubature::cubintegrate(IntegrandNegative, lower = - Inf, upper = min(0, ExpValueTP - ExpValueAPI), method = "hcubature")$integral)
 
   Fbar <- integralX1X2 * (1 - FU1U2) / (1 - probaQuantile)
 
