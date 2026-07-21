@@ -240,7 +240,7 @@ CopulaApproachReturnLevels <- function(data, returnPeriod, probaQuantile, nbDays
     GPDprobaRL2 <- 1 - (1 - probaRL^(h * extremalIndex2)) / (1 - probaQuantile^(h * extremalIndex2))
     res <- BivariateReturnPeriodCopula(c(GPDprobaRL1, GPDprobaRL2), h, c(extremalIndex1, extremalIndex2, extremalIndexBiv), probaQuantile, copula, FU1U2, nbDaysPerYear, nbYears, Dparam, probaOccurrence)[1] - returnPeriod
 
-    while (abs(res) > 1) {
+    while (abs(res) > 1 && iteration < 1000) {
       if (res > 0) {
         probaRLmax <- probaRL
         probaRL <- (probaRLmin + probaRLmax) / 2
@@ -251,6 +251,7 @@ CopulaApproachReturnLevels <- function(data, returnPeriod, probaQuantile, nbDays
       GPDprobaRL1 <- 1 - (1 - probaRL^(h * extremalIndex1)) / (1 - probaQuantile^(h * extremalIndex1))
       GPDprobaRL2 <- 1 - (1 - probaRL^(h * extremalIndex2)) / (1 - probaQuantile^(h * extremalIndex2))
       res <- BivariateReturnPeriodCopula(c(GPDprobaRL1, GPDprobaRL2), h, c(extremalIndex1, extremalIndex2, extremalIndexBiv), probaQuantile, copula, FU1U2, nbDaysPerYear, nbYears, Dparam, probaOccurrence)[1] - returnPeriod
+      iteration <- iteration + 1
     }
   }
 
