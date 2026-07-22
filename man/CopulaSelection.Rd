@@ -27,7 +27,7 @@ CopulaSelection(
 
 \item{listProbas}{List of probabilities of quantiles. Have to be high probabilities. Default to c(0.9, 0.91, 0.92, 0.93, 0.94, 0.95, 0.96, 0.97, 0.98).}
 
-\item{listCopulaNumber}{The list of copula from which the copula is selected. Default to c(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 13, 14, 16, 17, 18, 19, 20, 23, 24, 26, 27, 28, 29, 30, 33, 34, 36, 37, 38, 39, 40, 104, 114, 124, 134, 204, 214, 224, 234). See VineCopula documentation.}
+\item{listCopulaNumber}{The list of copula from which the copula is selected. Default to c(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 13, 14, 16, 17, 18, 19, 20, 23, 24, 26, 27, 28, 29, 30, 33, 34, 36, 37, 38, 39, 40). See VineCopula documentation.}
 }
 \value{
 The copula selected. It's the short name from the VineCopula package.
