@@ -468,7 +468,11 @@ CopulaApproach <- function(data, returnLevels, probaQuantile, nbDaysPerYear, nbY
 
     # Copula estimation
     copulaFamily <- CopulaSelection(data, probaQuantile, nbDaysPerYear, nbYears, c(blockSize1, blockSize2, blockSizeBiv))
-    copula <- VineCopula::BiCopEst(Unif1, Unif2, family = VineCopula::BiCopName(copulaFamily), se = TRUE)
+    if (copulaFamily == "I") {
+      copula <- VineCopula::BiCop(0, 0)
+    } else {
+      copula <- VineCopula::BiCopEst(Unif1, Unif2, family = VineCopula::BiCopName(copulaFamily), se = TRUE)
+    }
   }
 
   # Calculate bivariate return period
