@@ -118,7 +118,7 @@ EstimateGPDParameters <- function(data, threshold) {
 #' @param nbYears The number of years considered (integer).
 #' @param blockSizes Vector of integers of size 3. The sizes of the blocks considered for the declustering, with the univariates first and the bivariate block size at the end.
 #' @param listProbas List of probabilities of quantiles. Have to be high probabilities. Default to c(0.9, 0.91, 0.92, 0.93, 0.94, 0.95, 0.96, 0.97, 0.98).
-#' @param listCopulaNumber The list of copula from which the copula is selected. Default to c(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 13, 14, 16, 17, 18, 19, 20, 23, 24, 26, 27, 28, 29, 30, 33, 34, 36, 37, 38, 39, 40, 104, 114, 124, 134, 204, 214, 224, 234). See VineCopula documentation.
+#' @param listCopulaNumber The list of copula from which the copula is selected. Default to c(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 13, 14, 16, 17, 18, 19, 20, 23, 24, 26, 27, 28, 29, 30, 33, 34, 36, 37, 38, 39, 40). See VineCopula documentation.
 #' @importFrom VineCopula as.copuladata
 #' @importFrom VineCopula BiCopEstList
 #' @importFrom VineCopula BiCopName
@@ -132,7 +132,7 @@ CopulaSelection <- function(data, probaQuantile, nbDaysPerYear, nbYears, blockSi
     listProbas <- c(0.9, 0.91, 0.92, 0.93, 0.94, 0.95, 0.96, 0.97, 0.98)
   }
   if (missing(listCopulaNumber)) {
-    listCopulaNumber <- c(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 13, 14, 16, 17, 18, 19, 20, 23, 24, 26, 27, 28, 29, 30, 33, 34, 36, 37, 38, 39, 40, 104, 114, 124, 134, 204, 214, 224, 234)
+    listCopulaNumber <- c(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 13, 14, 16, 17, 18, 19, 20, 23, 24, 26, 27, 28, 29, 30, 33, 34, 36, 37, 38, 39, 40)
   }
 
   copulaScore <- data.frame(Families = listCopulaNumber,
@@ -341,7 +341,25 @@ BivariateReturnPeriodCopula <- function(GPDprobas, h, extremalIndexes, probaQuan
 
   hbarU1U2 <- Hbar(FU1U2, h, extremalIndexes, probaQuantile, nbYears, Dparam)
 
-  probaBiv <- 1 + VineCopula::BiCopCDF(GPDprobas[1], GPDprobas[2], copula) - VineCopula::BiCopCDF(GPDprobas[1], 1, copula) - VineCopula::BiCopCDF(1, GPDprobas[2], copula)
+  if (is.nan(VineCopula::BiCopCDF(GPDprobas[1], GPDprobas[2], copula))) {
+    copValueBiv <- 1
+  } else {
+    copValueBiv <- VineCopula::BiCopCDF(GPDprobas[1], GPDprobas[2], copula)
+  }
+
+  if (is.nan(VineCopula::BiCopCDF(GPDprobas[1], 1, copula))) {
+    copValueOne <- 1
+  } else {
+    copValueOne <- VineCopula::BiCopCDF(GPDprobas[1], 1, copula)
+  }
+
+  if (is.nan(VineCopula::BiCopCDF(1, GPDprobas[2], copula))) {
+    copValueTwo <- 1
+  } else {
+    copValueTwo <- VineCopula::BiCopCDF(1, GPDprobas[2], copula)
+  }
+
+  probaBiv <- 1 + copValueBiv - copValueOne - copValueTwo
   returnPeriodBivariate <- - log(1 - probaOccurrence) * h / (nbDaysPerYear * hbarU1U2 * probaBiv)
 
   return(c(returnPeriodBivariate, probaBiv))
