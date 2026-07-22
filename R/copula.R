@@ -300,9 +300,12 @@ UnivariateReturnPeriodCopula <- function(proba, extremalIndex, nbDaysPerYear, pr
 
 Hbar <- function(FU1U2, h, extremalIndexes, probaQuantile, nbYears, Dparam) {
 
-  minExtremalIndexValue <- max((1 - probaQuantile) * extremalIndexes[1] / (1 - FU1U2), (1 - probaQuantile) * extremalIndexes[2] / (1 - FU1U2))
-  if (extremalIndexes[3] < minExtremalIndexValue) {
-    extremalIndexBiv <- minExtremalIndexValue
+  minExtremalIndexBiv <- max((1 - probaQuantile) * extremalIndexes[1] / (1 - FU1U2), (1 - probaQuantile) * extremalIndexes[2] / (1 - FU1U2))
+  maxExtremalIndexBiv <- (1 - probaQuantile) * extremalIndexes[1] / (1 - FU1U2) + (1 - probaQuantile) * extremalIndexes[2] / (1 - FU1U2)
+  if (extremalIndexes[3] < minExtremalIndexBiv) {
+    extremalIndexBiv <- minExtremalIndexBiv
+  } else if (extremalIndexes[3] > maxExtremalIndexBiv) {
+    extremalIndexBiv <- maxExtremalIndexBiv
   } else {
     extremalIndexBiv <- extremalIndexes[3]
   }
