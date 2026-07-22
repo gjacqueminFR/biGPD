@@ -132,7 +132,7 @@ CopulaSelection <- function(data, probaQuantile, nbDaysPerYear, nbYears, blockSi
     listProbas <- c(0.9, 0.91, 0.92, 0.93, 0.94, 0.95, 0.96, 0.97, 0.98)
   }
   if (missing(listCopulaNumber)) {
-    listCopulaNumber <- c(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 13, 14, 16, 17, 18, 19, 20, 23, 24, 26, 27, 28, 29, 30, 33, 34, 36, 37, 38, 39, 40)
+    listCopulaNumber <- c(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 13, 14, 16, 17, 18, 19, 23, 24, 26, 27, 28, 29, 33, 34, 36, 37, 38, 39)
   }
 
   copulaScore <- data.frame(Families = listCopulaNumber,
@@ -179,7 +179,7 @@ CopulaSelection <- function(data, probaQuantile, nbDaysPerYear, nbYears, blockSi
 
       # Copula selection
 
-      if (length(unique(Unif1)) > 2 && length(unique(Unif2)) > 2) {
+      if (length(unique(Unif1)) > 4 && length(unique(Unif2)) > 4) {
 
         listCopula <- VineCopula::BiCopEstList(Unif1, Unif2, familyset = listCopulaNumber)$summary
 
