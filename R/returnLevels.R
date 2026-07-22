@@ -198,7 +198,7 @@ CopulaApproachReturnLevels <- function(data, returnPeriod, probaQuantile, nbDays
 
   dataBiv <- BivariateDeclustering(data1, data2, nbDaysPerYear, nbYears, c(threshold1, threshold2), blockSizeBiv, logic)
 
-  if (length(unique(dataBiv$Var1)) <= 3 && length(unique(dataBiv$Var2)) <= 3) {
+  if (length(unique(dataBiv$Var1)) <= 4 && length(unique(dataBiv$Var2)) <= 4) {
     copulaFamily <- "I"
     copula <- VineCopula::BiCop(0, 0) # Independent copula
   } else {
