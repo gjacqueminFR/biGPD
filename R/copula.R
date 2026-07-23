@@ -471,7 +471,8 @@ CopulaApproach <- function(data, returnLevels, probaQuantile, nbDaysPerYear, nbY
     if (copulaFamily == "I") {
       copula <- VineCopula::BiCop(0, 0)
     } else {
-      copula <- VineCopula::BiCopEst(Unif1, Unif2, family = VineCopula::BiCopName(copulaFamily), se = TRUE)
+      default_cop <- VineCopula::BiCop(0, 0)
+      copula <- tryCatch({VineCopula::BiCopEst(Unif1, Unif2, family = VineCopula::BiCopName(copulaFamily), se = TRUE)}, error = function(e) {default_cop})
     }
   }
 
