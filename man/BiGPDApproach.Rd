@@ -14,6 +14,7 @@ BiGPDApproach(
   nbDaysPerYear,
   nbYears,
   h,
+  valueFilter,
   Dparam,
   probaOccurrence
 )
@@ -36,6 +37,8 @@ BiGPDApproach(
 \item{nbYears}{The number of distinct years. Default value is 1.}
 
 \item{h}{The parameter of non-concurrence (integer).}
+
+\item{valueFilter}{Data below this value are considered as 0. Default value is 0.1. (float).}
 
 \item{Dparam}{Cf documentation of the dgaps function of the exdex package. Default value is 3.}
 

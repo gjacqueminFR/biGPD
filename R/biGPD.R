@@ -272,15 +272,19 @@ BivariateExceedenceProbability2 <- function(probas, empCDF, probaQuantile, FU1U2
 #' @param nbDaysPerYear The number of days considered per year (integer).
 #' @param nbYears The number of distinct years. Default value is 1.
 #' @param h The parameter of non-concurrence (integer).
+#' @param valueFilter Data below this value are considered as 0. Default value is 0.1. (float).
 #' @param Dparam Cf documentation of the dgaps function of the exdex package. Default value is 3.
 #' @param probaOccurrence The probability that the values are reached before the return period time. Default value to 0.63.
 #' @return A list with, in that order: the return period of first variable, the return period of the second variable, the bivariate return period, the non-concurrent joint excess probability, chi and chiBarre.
 #' @export
 
-BiGPDApproach <- function(data, returnLevels, EGPDtypes, initParams1, initParams2, probaQuantile, nbDaysPerYear, nbYears, h, Dparam, probaOccurrence) {
+BiGPDApproach <- function(data, returnLevels, EGPDtypes, initParams1, initParams2, probaQuantile, nbDaysPerYear, nbYears, h, valueFilter, Dparam, probaOccurrence) {
 
   if (missing(probaOccurrence)) {
     probaOccurrence <- 1 - exp(-1)
+  }
+  if (missing(valueFilter)) {
+    valueFilter <- 0.1
   }
 
   threshold1 <- quantile(data[, 1], probaQuantile)
@@ -290,10 +294,14 @@ BiGPDApproach <- function(data, returnLevels, EGPDtypes, initParams1, initParams
   extremalIndex2 <- UnivariateExtremalIndex(data[, 2], probaQuantile, nbYears, Dparam)
 
   # Get the probability of no rain, and filter the zeros
-  probaZero1 <- length(data[, 1][data[, 1] == 0]) / length(data[, 1])
-  dataFiltered1 <- data[, 1][data[, 1] > 0]
-  probaZero2 <- length(data[, 2][data[, 2] == 0]) / length(data[, 2])
-  dataFiltered2 <- data[, 2][data[, 2] > 0]
+  # probaZero1 <- length(data[, 1][data[, 1] == 0]) / length(data[, 1])
+  # dataFiltered1 <- data[, 1][data[, 1] > 0]
+  # probaZero2 <- length(data[, 2][data[, 2] == 0]) / length(data[, 2])
+  # dataFiltered2 <- data[, 2][data[, 2] > 0]
+  probaZero1 <- length(data[, 1][data[, 1] <= valueFilter]) / length(data[, 1])
+  dataFiltered1 <- data[, 1][data[, 1] > valueFilter]
+  probaZero2 <- length(data[, 2][data[, 2] <= valueFilter]) / length(data[, 2])
+  dataFiltered2 <- data[, 2][data[, 2] > valueFilter]
 
   EGPDparam1 <- EstimateEGPDParameters(dataFiltered1, EGPDtypes[1], initParams1)
   EGPDparam2 <- EstimateEGPDParameters(dataFiltered2, EGPDtypes[2], initParams2)
