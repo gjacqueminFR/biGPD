@@ -98,7 +98,8 @@ BivariateDeclustering <- function(data1, data2, nbDaysPerYear, nbYears, threshol
 #' @export
 
 EstimateGPDParameters <- function(data, threshold) {
-  if (is.nan(tea::gpdFit(data, threshold = threshold, method = "mle")$par.ses[["Scale (Intercept)"]])) {
+
+  if (is.nan(tea::gpdFit(data, threshold = threshold, method = "mle")$par.ses[["Scale (Intercept)"]]) || is.nan(tea::gpdFit(data, threshold = threshold, method = "mle")$par.ses[["Shape (Intercept)"]]) || tea::gpdFit(data, threshold = threshold, method = "mle")$par.ests[["Scale (Intercept)"]] <= 0) {
     fit <- tea::gpdFit(data, threshold = threshold, method = "pwm")
   } else {
     fit <- tea::gpdFit(data, threshold = threshold, method = "mle")
