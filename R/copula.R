@@ -99,10 +99,10 @@ BivariateDeclustering <- function(data1, data2, nbDaysPerYear, nbYears, threshol
 
 EstimateGPDParameters <- function(data, threshold) {
 
-  if (is.nan(tea::gpdFit(data, threshold = threshold, method = "mle")$par.ses[["Scale (Intercept)"]]) || is.nan(tea::gpdFit(data, threshold = threshold, method = "mle")$par.ses[["Shape (Intercept)"]]) || tea::gpdFit(data, threshold = threshold, method = "mle")$par.ests[["Scale (Intercept)"]] <= 0) {
+  fit <- tea::gpdFit(data, threshold = threshold, method = "mle")
+
+  if (is.nan(fit$par.ses[["Scale (Intercept)"]]) || is.nan(fit$par.ses[["Shape (Intercept)"]]) || fit$par.ests[["Scale (Intercept)"]] <= 0) {
     fit <- tea::gpdFit(data, threshold = threshold, method = "pwm")
-  } else {
-    fit <- tea::gpdFit(data, threshold = threshold, method = "mle")
   }
 
   GPDparam <- c(threshold, fit$par.ests[["Scale (Intercept)"]], fit$par.ests[["Shape (Intercept)"]]) # threshold, sigma, xi
@@ -128,7 +128,7 @@ EstimateGPDParameters <- function(data, threshold) {
 #' @export
 
 CopulaSelection <- function(data, probaQuantile, nbDaysPerYear, nbYears, blockSizes, listProbas, listCopulaNumber) {
-  start("Copula selection")
+
   if (missing(listProbas)) {
     listProbas <- c(0.9, 0.91, 0.92, 0.93, 0.94, 0.95, 0.96, 0.97, 0.98)
   }
@@ -148,58 +148,59 @@ CopulaSelection <- function(data, probaQuantile, nbDaysPerYear, nbYears, blockSi
 
   for (q in listProbas) {
 
-    ### first variable
+    ### Univariate declustering
     threshold1 <- quantile(data1, q)
     dataDecluster1 <- UnivariateDeclustering(data1, nbDaysPerYear, nbYears, threshold1, blockSizes[1])
-    GPDparam1 <- EstimateGPDParameters(dataDecluster1, threshold1)
-
-    ### second variable
     threshold2 <- quantile(data2, q)
     dataDecluster2 <- UnivariateDeclustering(data2, nbDaysPerYear, nbYears, threshold2, blockSizes[2])
-    GPDparam2 <- EstimateGPDParameters(dataDecluster2, threshold2)
 
-    ### Bivariate
-    dataBiv <- BivariateDeclustering(data1, data2, nbDaysPerYear, nbYears, c(threshold1, threshold2), blockSizes[3])
+    ### Estimation of GPD parameters
+    if (length(unique(dataDecluster1)) > 2 && length(unique(dataDecluster2)) > 2) {
+      GPDparam1 <- EstimateGPDParameters(dataDecluster1, threshold1)
+      GPDparam2 <- EstimateGPDParameters(dataDecluster2, threshold2)
 
-    if (length(dataBiv$Var1) > 2) {
+      ### Bivariate
+      dataBiv <- BivariateDeclustering(data1, data2, nbDaysPerYear, nbYears, c(threshold1, threshold2), blockSizes[3])
 
-      if (GPDparam1[3] < 0) {
-        dataBiv[, 1][dataBiv[, 1] >= GPDparam1[1] - (GPDparam1[2] / GPDparam1[3])] <- GPDparam1[1] - (GPDparam1[2] / GPDparam1[3]) - 0.0001
-      }
-      if (GPDparam2[3] < 0) {
-        dataBiv[, 2][dataBiv[, 2] >= GPDparam2[1] - (GPDparam2[2] / GPDparam2[3])] <- GPDparam2[1] - (GPDparam2[2] / GPDparam2[3]) - 0.0001
-      }
+      if (length(dataBiv$Var1) > 2) {
 
-      dataBiv[, 1] <- tea::pgpd(dataBiv[, 1], GPDparam1[1], GPDparam1[2], GPDparam1[3])
-      dataBiv[, 2] <- tea::pgpd(dataBiv[, 2], GPDparam2[1], GPDparam2[2], GPDparam2[3])
-
-      dataCop <- VineCopula::as.copuladata(dataBiv)
-
-      Unif1 <- dataCop[, 1]
-      Unif2 <- dataCop[, 2]
-
-      # Copula selection
-
-      if (length(unique(Unif1)) > 4 && length(unique(Unif2)) > 4) {
-
-        listCopula <- VineCopula::BiCopEstList(Unif1, Unif2, familyset = listCopulaNumber)$summary
-
-        orderedCopula <- listCopula[order(listCopula$BIC), ]
-
-        for (i in seq_along(orderedCopula$family)) {
-
-          copulaScore[copulaScore$Families == orderedCopula[i, ]$family, ]$ScoreSumPlaces <- i + copulaScore[copulaScore$Families == orderedCopula[i, ]$family, ]$ScoreSumPlaces
-
-          copulaScore[copulaScore$Families == orderedCopula[i, ]$family, ]$ScoreMeanBIC <- orderedCopula[i, ]$BIC + copulaScore[copulaScore$Families == orderedCopula[i, ]$family, ]$ScoreMeanBIC
-
-          if (as.integer(100 * q) == as.integer(100 * probaQuantile)) {
-            copulaScore[copulaScore$Families == orderedCopula[i, ]$family, ]$AppearAtSelectedQuantile <- TRUE
-          }
-
-          copulaScore[copulaScore$Families == orderedCopula[i, ]$family, ]$PercentAppearances <- copulaScore[copulaScore$Families == orderedCopula[i, ]$family, ]$PercentAppearances + 1 / length(listProbas)
-
+        if (GPDparam1[3] < 0) {
+          dataBiv[, 1][dataBiv[, 1] >= GPDparam1[1] - (GPDparam1[2] / GPDparam1[3])] <- GPDparam1[1] - (GPDparam1[2] / GPDparam1[3]) - 0.0001
+        }
+        if (GPDparam2[3] < 0) {
+          dataBiv[, 2][dataBiv[, 2] >= GPDparam2[1] - (GPDparam2[2] / GPDparam2[3])] <- GPDparam2[1] - (GPDparam2[2] / GPDparam2[3]) - 0.0001
         }
 
+        dataBiv[, 1] <- tea::pgpd(dataBiv[, 1], GPDparam1[1], GPDparam1[2], GPDparam1[3])
+        dataBiv[, 2] <- tea::pgpd(dataBiv[, 2], GPDparam2[1], GPDparam2[2], GPDparam2[3])
+
+        dataCop <- VineCopula::as.copuladata(dataBiv)
+
+        Unif1 <- dataCop[, 1]
+        Unif2 <- dataCop[, 2]
+
+        # Copula selection
+
+        if (length(unique(Unif1)) > 4 && length(unique(Unif2)) > 4) {
+
+          listCopula <- VineCopula::BiCopEstList(Unif1, Unif2, familyset = listCopulaNumber)$summary
+
+          orderedCopula <- listCopula[order(listCopula$BIC), ]
+
+          for (i in seq_along(orderedCopula$family)) {
+
+            copulaScore[copulaScore$Families == orderedCopula[i, ]$family, ]$ScoreSumPlaces <- i + copulaScore[copulaScore$Families == orderedCopula[i, ]$family, ]$ScoreSumPlaces
+
+            copulaScore[copulaScore$Families == orderedCopula[i, ]$family, ]$ScoreMeanBIC <- orderedCopula[i, ]$BIC + copulaScore[copulaScore$Families == orderedCopula[i, ]$family, ]$ScoreMeanBIC
+
+            if (as.integer(100 * q) == as.integer(100 * probaQuantile)) {
+              copulaScore[copulaScore$Families == orderedCopula[i, ]$family, ]$AppearAtSelectedQuantile <- TRUE
+            }
+
+            copulaScore[copulaScore$Families == orderedCopula[i, ]$family, ]$PercentAppearances <- copulaScore[copulaScore$Families == orderedCopula[i, ]$family, ]$PercentAppearances + 1 / length(listProbas)
+
+          }
+        }
       }
     }
   }
