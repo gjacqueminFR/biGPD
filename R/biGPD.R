@@ -287,6 +287,12 @@ BiGPDApproach <- function(data, returnLevels, EGPDtypes, initParams1, initParams
     valueFilter <- 0.1
   }
 
+  # Exit with default values if all the values are identical
+
+  if (length(unique(data[, 1])) < 2 || length(unique(data[, 2])) < 2) {
+    return(c(Inf, Inf, Inf, 0, 0, 0))
+  }
+
   threshold1 <- quantile(data[, 1], probaQuantile)
   threshold2 <- quantile(data[, 2], probaQuantile)
 
@@ -294,10 +300,7 @@ BiGPDApproach <- function(data, returnLevels, EGPDtypes, initParams1, initParams
   extremalIndex2 <- UnivariateExtremalIndex(data[, 2], probaQuantile, nbYears, Dparam)
 
   # Get the probability of no rain, and filter the zeros
-  # probaZero1 <- length(data[, 1][data[, 1] == 0]) / length(data[, 1])
-  # dataFiltered1 <- data[, 1][data[, 1] > 0]
-  # probaZero2 <- length(data[, 2][data[, 2] == 0]) / length(data[, 2])
-  # dataFiltered2 <- data[, 2][data[, 2] > 0]
+
   probaZero1 <- length(data[, 1][data[, 1] <= valueFilter]) / length(data[, 1])
   dataFiltered1 <- data[, 1][data[, 1] > valueFilter]
   probaZero2 <- length(data[, 2][data[, 2] <= valueFilter]) / length(data[, 2])
