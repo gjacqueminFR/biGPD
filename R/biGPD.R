@@ -19,7 +19,7 @@ UnivariateExtremalIndex <- function(data, probaQuantile, nbYears, Dparam) {
 
   threshold <- quantile(data, probaQuantile)
 
-  if (max(data) < threshold) {
+  if (max(data, na.rm = TRUE) <= threshold) {
     return(1)
   } else {
     DgapsRes <- exdex::dgaps(matrix(data, ncol = nbYears), threshold, D = Dparam)
