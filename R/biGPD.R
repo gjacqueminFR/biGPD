@@ -306,6 +306,12 @@ BiGPDApproach <- function(data, returnLevels, EGPDtypes, initParams1, initParams
   probaZero2 <- length(data[, 2][data[, 2] <= valueFilter]) / length(data[, 2])
   dataFiltered2 <- data[, 2][data[, 2] > valueFilter]
 
+  # Exit with default values if all the values are below valueFilter
+
+  if (length(dataFiltered1) < 2 || length(dataFiltered2) < 2) {
+    return(c(Inf, Inf, Inf, 0, 0, 0))
+  }
+
   EGPDparam1 <- EstimateEGPDParameters(dataFiltered1, EGPDtypes[1], initParams1)
   EGPDparam2 <- EstimateEGPDParameters(dataFiltered2, EGPDtypes[2], initParams2)
 
