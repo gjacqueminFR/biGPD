@@ -98,7 +98,8 @@ BiGPDApproachReturnLevels <- function(data, returnPeriod, EGPDtypes, initParams1
 
   if (ReturnPeriodBiGPDReturnLevels(probaRLmin, probaQuantile, FbarU1U2, extremalIndex1, extremalIndex2, extremalIndexBivOG, h, nbDaysPerYear, probaOccurrence) > returnPeriod) {
     probaRL <- probaRLmin
-    print("Problem !!")
+    returnLevel1 <- threshold1
+    returnLevel2 <- threshold2
   } else {
     probaRL <- (probaRLmin + probaRLmax) / 2
     res <- ReturnPeriodBiGPDReturnLevels(probaRL, probaQuantile, FbarU1U2, extremalIndex1, extremalIndex2, extremalIndexBivOG, h, nbDaysPerYear, probaOccurrence) - returnPeriod
@@ -114,10 +115,10 @@ BiGPDApproachReturnLevels <- function(data, returnPeriod, EGPDtypes, initParams1
       res <- ReturnPeriodBiGPDReturnLevels(probaRL, probaQuantile, FbarU1U2, extremalIndex1, extremalIndex2, extremalIndexBivOG, h, nbDaysPerYear, probaOccurrence) - returnPeriod
       iteration <- iteration + 1
     }
+    returnLevel1 <- ValueEGPD(probaRL, EGPDtypes[1], EGPDparam1, probaZero1)
+    returnLevel2 <- ValueEGPD(probaRL, EGPDtypes[2], EGPDparam2, probaZero2)
   }
 
-  returnLevel1 <- ValueEGPD(probaRL, EGPDtypes[1], EGPDparam1, probaZero1)
-  returnLevel2 <- ValueEGPD(probaRL, EGPDtypes[2], EGPDparam2, probaZero2)
 
   # Chi and chi barre values
   chi <- FbarU1U2 / (1 - probaQuantile)
@@ -240,6 +241,8 @@ CopulaApproachReturnLevels <- function(data, returnPeriod, probaQuantile, nbDays
 
   if (BivariateReturnPeriodCopula(c(GPDprobaRL1, GPDprobaRL2), h, c(extremalIndex1, extremalIndex2, extremalIndexBiv), probaQuantile, copula, FU1U2, nbDaysPerYear, nbYears, Dparam, probaOccurrence)[1] > returnPeriod) {
     probaRL <- probaRLmax
+    returnLevel1 <- threshold1
+    returnLevel2 <- threshold2
   } else {
     probaRL <- (probaRLmin + probaRLmax) / 2
     GPDprobaRL1 <- 1 - (1 - probaRL^(h * extremalIndex1)) / (1 - probaQuantile^(h * extremalIndex1))
@@ -259,10 +262,9 @@ CopulaApproachReturnLevels <- function(data, returnPeriod, probaQuantile, nbDays
       res <- BivariateReturnPeriodCopula(c(GPDprobaRL1, GPDprobaRL2), h, c(extremalIndex1, extremalIndex2, extremalIndexBiv), probaQuantile, copula, FU1U2, nbDaysPerYear, nbYears, Dparam, probaOccurrence)[1] - returnPeriod
       iteration <- iteration + 1
     }
+    returnLevel1 <- GetGPDvalue(GPDprobaRL1, GPDparam1)
+    returnLevel2 <- GetGPDvalue(GPDprobaRL2, GPDparam2)
   }
-
-  returnLevel1 <- GetGPDvalue(GPDprobaRL1, GPDparam1)
-  returnLevel2 <- GetGPDvalue(GPDprobaRL2, GPDparam2)
 
   chi <- max(2 - log(VineCopula::BiCopCDF(0.9999, 0.9999, copula)) / log(0.9999), 0)
   chiBarre <- 2 * log(1 - 0.9999) / log(1 - 2 * 0.9999 + VineCopula::BiCopCDF(0.9999, 0.9999, copula)) - 1
