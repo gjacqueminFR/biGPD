@@ -324,9 +324,9 @@ BiGPDApproach <- function(data, returnLevels, EGPDtypes, initParams1, initParams
 
   # Constant estimated with frequency
   dataAbove <- data[data[, 1] >= threshold1 & data[, 2] >= threshold2, ]
-  if (nrow(dataAbove) == 0) {
+  if (length(dataAbove) == 0) {
     FbarU1U2 <- 0
-  } else if (nrow(dataAbove) == 1) {
+  } else if (length(dataAbove) == 2) {
     FbarU1U2 <- 1 / length(data[, 1])
   } else {
     FbarU1U2 <- length(dataAbove[, 1]) / length(data[, 1])
